@@ -1,0 +1,20 @@
+<launch>
+	<!-- this launch file will start the controller node (and mavros since this is also needed) -->
+	<!-- will start the following: -->
+	<!-- 	mavros -->
+	<!--	control node -->
+	<!-- 	appropriate ros bags -->
+
+	<!-- mavros to the pixhawk -->
+	<include file="$(find aa241x_student)/launch/mavros_pixhawk.launch" >
+		<!-- TODO: decide if this should be local or the one for the laptop -->
+	</include>
+
+	<!-- the control node -->
+	<node pkg="aa241x_student" type="control_node" name="control_node" output="screen">
+    </node>
+
+	<!-- logging -->
+	<include file="$(find aa241x_student)/launch/log_combined.launch" />
+
+</launch>

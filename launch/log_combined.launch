@@ -1,0 +1,19 @@
+<launch>
+	<!-- launch file to put the full combined logging into one place -->
+
+	<node pkg="rosbag" type="record" name="combined_bag"
+		args="-o $(env HOME)/rosbags/combined_bag
+				/mavros/local_position/pose
+				/mavros/local_position/velocity
+				/mavros/global_position/global
+				/mavros/global_position/raw/gps_vel
+				/mavros/global_position/raw/fix
+				/mavros/global_position/compass_hdg
+				/mavros/altitude
+				/mavros/time_reference
+				/rosout" />
+
+	<!-- TODO: need to log the aa241x mission specific elements -->
+
+
+</launch>
