@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   genmsg
   message_generation
+  aa241x_mission
 )
 
 ## System dependencies are found with CMake's conventions

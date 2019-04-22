@@ -12,13 +12,15 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/PositionTarget.h>
 
+#include <aa241x_mission/SensorMeasurement.h>
+
 
 
 class ControlNode {
 
 public:
 
-	ControlNode();
+	ControlNode(float flight_alt);
 
 	int run();
 
@@ -27,7 +29,7 @@ private:
 
 
 	// node handler
-	ros::NodeHandler _nh;
+	ros::NodeHandle _nh;
 
 	// TODO: add any settings, etc, here
 	float _flight_alt = 20.0f;		// desired flight altitude [m] AGL (above takeoff)
@@ -50,8 +52,8 @@ private:
 	// callbacks
 	void stateCallback(const mavros_msgs::State::ConstPtr& msg);
 	void localPosCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
-	void beaconMeasCallback(const aa241x_mission::Measurement::ConstPtr& msg);  // NOTE: this might not even be wanted here by students
-	void apRangeCallback(const aa241x_student::APRange::ConstPtr& msg);
+	void beaconMeasCallback(const aa241x_mission::SensorMeasurement::ConstPtr& msg);  // NOTE: this might not even be wanted here by students
+	//void apRangeCallback(const aa241x_student::APRange::ConstPtr& msg);
 	// TODO: add callbacks here
 
 	// helper functions
@@ -61,20 +63,25 @@ private:
 };
 
 
-ControlNode::ControlNode() {
+ControlNode::ControlNode(float flight_alt) :
+_flight_alt(flight_alt)
+{
 
 
 	// subscribe to the desired topics
 	_state_sub = _nh.subscribe<mavros_msgs::State>("mavros/state", 1, &ControlNode::stateCallback, this);
-	_local_pos_sub = _nh.subscribe<geometry_msgs::PoseStamped>("aa241x/local_position", 1, &ControlNode::localPosCallback, this);
-	_beacon_meas_sub = _nh.subscribe<aa241x_mission::Measurement>("measurement", 10, &ControlNode::beaconMeasCallback, this);
-	_ap_range_sub = _nh.subscribe<aa241x_student::APRange>("ap_range", 10, &ControlNode::apRangeCallback, this);
+	_local_pos_sub = _nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 1, &ControlNode::localPosCallback, this);
+	_beacon_meas_sub = _nh.subscribe<aa241x_mission::SensorMeasurement>("measurement", 10, &ControlNode::beaconMeasCallback, this);
+	//_ap_range_sub = _nh.subscribe<aa241x_student::APRange>("ap_range", 10, &ControlNode::apRangeCallback, this);
 
+	// publisher
+	_cmd_pub = _nh.advertise<mavros_msgs::PositionTarget>("mavros/setpoint_raw/local", 1);
 
 }
 
 void ControlNode::stateCallback(const mavros_msgs::State::ConstPtr& msg) {
 	_current_state = *msg;
+	ROS_INFO("got state message: %s", _current_state.mode.c_str());
 }
 
 void ControlNode::localPosCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
@@ -83,15 +90,16 @@ void ControlNode::localPosCallback(const geometry_msgs::PoseStamped::ConstPtr& m
 
 // TODO: I think I am going to remove all beacon measurement related content from this node
 // TODO: create another node for the path planning that takes in this information
-void ControlNode::beaconMeasCallback(const aa241x_mission::Measurement::ConstPtr& msg) {
+void ControlNode::beaconMeasCallback(const aa241x_mission::SensorMeasurement::ConstPtr& msg) {
 	// TODO: decide what to do with the beacon measurement here
 }
 
+/*
 void ControlNode::apRangeCallback(const aa241x_student::APRange::ConstPtr& msg) {
 	// TODO: decide what to do with the range measurement here
 	// TODO: basically writing some of the controller in this callback
 }
-
+*/
 
 void ControlNode::waitForFCUConnection() {
 	// wait for FCU connection
@@ -103,7 +111,7 @@ void ControlNode::waitForFCUConnection() {
 }
 
 
-void ControlNode::run() {
+int ControlNode::run() {
 
 	// wait for the controller connection
 	waitForFCUConnection();
@@ -113,20 +121,28 @@ void ControlNode::run() {
 	// NOTE: these will be true for all commands send
 	mavros_msgs::PositionTarget cmd;
 	cmd.coordinate_frame = mavros_msgs::PositionTarget::FRAME_LOCAL_NED;
-	cmd.type_mask = 2499; 	// (mavros_msgs::PositionTarget::IGNORE_PX | mavros_msgs::PositionTarget::IGNORE_PY | mavros_msgs::PositionTarget::IGNORE_VZ | mavros_msgs::PositionTarget::IGNORE_AFX | mavros_msgs::PositionTarget::IGNORE_AFY | mavros_msgs::PositionTarget::IGNORE_AFZ | mavros_msgs::PositionTarget::IGNORE_YAW_RATE);
+
+	// command positions in local coordinates
+	cmd.type_mask = (mavros_msgs::PositionTarget::IGNORE_VX |
+		mavros_msgs::PositionTarget::IGNORE_VY |
+		mavros_msgs::PositionTarget::IGNORE_VZ |
+		mavros_msgs::PositionTarget::IGNORE_AFX |
+		mavros_msgs::PositionTarget::IGNORE_AFY |
+		mavros_msgs::PositionTarget::IGNORE_AFZ |
+		mavros_msgs::PositionTarget::IGNORE_YAW_RATE);
+
+	// cmd.type_mask = 2499;  // mask for Vx Vy and Pz control
 	// TODO: need to add a link to the mask to explain the value
 	cmd.yaw = 0;			// always want to keep heading north
 
 	// the position information
-	// NOTE: will only be updating z in this case!
 	// NOTE: this is defined in ENU
 	geometry_msgs::Point pos;
 	pos.x = 0;	// E
 	pos.y = 0;	// N
-	pos.z = _flight_alt;	// U
+	pos.z = 0;	// U
 
 	// the velocity information
-	// NOTE: will only be updating vx and vy
 	// NOTE: this is defined in ENU
 	geometry_msgs::Vector3 vel;
 	vel.x = 0;	// E
@@ -143,9 +159,9 @@ void ControlNode::run() {
 		// NOTE: need to be streaming setpoints in order for offboard to be allowed
 		if (_current_state.mode != "OFFBOARD") {
 			// send command to stay in the same position
-			vel.x = 0;
-			vel.y = 0;
-			pos.z = _flight_alt;
+			pos.x = 0;
+			pos.y = 0;
+			pos.z = 0;
 
 			cmd.header.stamp = ros::Time::now();
 			cmd.position = pos;
@@ -163,8 +179,8 @@ void ControlNode::run() {
 
 
 		// TODO: populate the control elements desired
-		vel.x = 0;
-		vel.y = 0;
+		pos.x = 0;
+		pos.y = 0;
 		pos.z = _flight_alt;
 
 		// publish the command
@@ -195,7 +211,7 @@ int main(int argc, char **argv) {
 	// TODO: determine settings
 
 	// create the node
-	ControlNode node();
+	ControlNode node(20.0f);
 
 	// run the node
 	return node.run();
