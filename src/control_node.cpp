@@ -1,10 +1,9 @@
 /**
- * this node will contain a skeleton for students for the control node.
- *
- * this is still in development!
+ * skeleton / example code for a node to do command and control of the pixhawk
  */
 
 // includes
+#include <math.h>
 #include <ros/ros.h>
 
 // topic data
@@ -46,6 +45,11 @@ private:
 	// data
 	mavros_msgs::State _current_state;
 	geometry_msgs::PoseStamped _current_local_pos;
+
+	// waypoint handling (example)
+	int _wp_index = -1;
+	int _n_waypoints = 1;
+	float _target_alt = 0.0f;
 
 	// subscribers
 	ros::Subscriber _state_sub;			// the current state of the pixhawk
@@ -123,6 +127,19 @@ void ControlNode::localPosCallback(const geometry_msgs::PoseStamped::ConstPtr& m
 	// save the current local position locally to be used in the main loop
 	// TODO: account for offset to convert from PX4 coordinate to lake lag frame
 	_current_local_pos = *msg;
+
+	// check to see if have completed the waypoint
+	// NOTE: for this case we only have a single waypoint
+	if (_wp_index == 0) {
+		float current_alt = _current_local_pos.pose.position.z;
+
+		// check condition on being "close enough" to the waypoint
+		if (abs(current_alt - _target_alt) < 0.1) {
+			// update the target altitude to land, and increment the waypoint
+			_target_alt = 0;
+			_wp_index++;
+		}
+	}
 }
 
 void ControlNode::sensorMeasCallback(const aa241x_mission::SensorMeasurement::ConstPtr& msg) {
@@ -223,16 +240,28 @@ int ControlNode::run() {
 			continue;
 		}
 
+		// TODO: if drone is not armed at this point, need to send a command to
+		// arm it
+		//
+		// NOTE: this can be done from either the callback or this main
+		// function, so need to decide where I want to put it
+
 		// at this point the pixhawk is in offboard control, so we can now fly
 		// the drone as desired
 
+		// set the first waypoint
+		if (_wp_index < 0) {
+			_wp_index = 0;
+			_target_alt = _flight_alt;
+		}
+
 		// TODO: populate the control elements desired
 		//
-		// in this case, just asking the pixhawk to takeoff to the _flight_alt
+		// in this case, just asking the pixhawk to takeoff to the _target_alt
 		// height
 		pos.x = 0;
 		pos.y = 0;
-		pos.z = _flight_alt;
+		pos.z = _target_alt;
 
 		// publish the command
 		cmd.header.stamp = ros::Time::now();
