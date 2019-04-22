@@ -6,7 +6,7 @@
 	<!-- 	appropriate ros bags -->
 
 	<!-- mavros to the pixhawk -->
-	<include file="$(find aa241x_commander)/launch/mavros_gazebo.launch" >
+	<include file="$(find aa241x_mission)/launch/mavros_gazebo.launch" >
 		<!-- TODO: decide if this should be local or the one for the laptop -->
 	</include>
 
@@ -16,7 +16,7 @@
 
 	<!-- logging -->
 	<!--
-	<include file="$(find aa241x_commander)/launch/log_combined.launch" />
+	<include file="$(find aa241x_commander)/launch/log_position.launch" />
 	-->
 
 </launch>
