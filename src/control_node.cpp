@@ -12,6 +12,7 @@
 #include <mavros_msgs/PositionTarget.h>
 
 #include <aa241x_mission/SensorMeasurement.h>
+#include <aa241x_mission/MissionState.h>
 
 /**
  * class to contain the functionality of the controller node.
@@ -51,11 +52,16 @@ private:
 	int _n_waypoints = 1;
 	float _target_alt = 0.0f;
 
+	// offset information
+	float _e_offset = 0.0f;
+	float _n_offset = 0.0f;
+	float _u_offset = 0.0f;
+
 	// subscribers
 	ros::Subscriber _state_sub;			// the current state of the pixhawk
 	ros::Subscriber _local_pos_sub;		// local position information
 	ros::Subscriber _sensor_meas_sub;	// mission sensor measurement
-	ros::Subscriber _landing_range_sub;	// measurement from the imaging node
+	ros::Subscriber _mission_state_sub; // mission state
 	// TODO: add subscribers here
 
 	// publishers
@@ -84,7 +90,12 @@ private:
 	 */
 	void sensorMeasCallback(const aa241x_mission::SensorMeasurement::ConstPtr& msg);
 
-	//void apRangeCallback(const aa241x_student::APRange::ConstPtr& msg);
+	/**
+	 * callback for the mission state for the AA241x mission
+	 * this includes the offset information for the lake lag coordinate frame
+	 * @param msg mission state
+	 */
+	void missionStateCallback(const aa241x_mission::MissionState::ConstPtr& msg);
 
 	// TODO: add callbacks here
 
@@ -108,7 +119,6 @@ _flight_alt(flight_alt)
 	_state_sub = _nh.subscribe<mavros_msgs::State>("mavros/state", 1, &ControlNode::stateCallback, this);
 	_local_pos_sub = _nh.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose", 1, &ControlNode::localPosCallback, this);
 	_sensor_meas_sub =_nh.subscribe<aa241x_mission::SensorMeasurement>("measurement", 10, &ControlNode::sensorMeasCallback, this);
-	//_landing_range_sub = _nh.subscribe<aa241x_student::APRange>("ap_range", 10, &ControlNode::apRangeCallback, this);
 
 	// advertise the published detailed
 
@@ -127,6 +137,8 @@ void ControlNode::localPosCallback(const geometry_msgs::PoseStamped::ConstPtr& m
 	// save the current local position locally to be used in the main loop
 	// TODO: account for offset to convert from PX4 coordinate to lake lag frame
 	_current_local_pos = *msg;
+
+	// TODO: make sure to account for the offset if desiring to fly in the Lake Lag frame
 
 	// check to see if have completed the waypoint
 	// NOTE: for this case we only have a single waypoint
@@ -149,12 +161,13 @@ void ControlNode::sensorMeasCallback(const aa241x_mission::SensorMeasurement::Co
 	// want to move this information to a mission handling node
 }
 
-/*
-void ControlNode::apRangeCallback(const aa241x_student::APRange::ConstPtr& msg) {
-	// TODO: decide what to do with the range measurement here
-	// TODO: basically writing some of the controller in this callback
+void ControlNode::missionStateCallback(const aa241x_mission::MissionState::ConstPtr& msg) {
+	// save the offset information
+	_e_offset = msg->e_offset;
+	_n_offset = msg->n_offset;
+	_u_offset = msg->u_offset;
 }
-*/
+
 
 void ControlNode::waitForFCUConnection() {
 	// wait for FCU connection by just spinning the callback until connected
