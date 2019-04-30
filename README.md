@@ -90,12 +90,4 @@ The control node subscribes to the following information:
      + `type_mask` - a bitfield that tells PX4 which fields to **ignore**.  For the most part the bitfield can be built using the constants defined in the topic type (the only notable exception is an altitude hold velocity control (specify Pz, Vx, Vy) which has a mask value of `2499`).
      + the data fields: `position`, `velocity`, `acceleration_or_force`, `yaw`, and `yaw_rate`.  These fields contain the respective information for the command to send to PX4.  **Note:** if you set data to the `velocity` fields, but the `type_mask` bitfield specifies to ignore the `velocity` fields, PX4 will ignore the fields, regardless of the data contained within the field.
 
-## MavROS Highlights ##
-
-, however, here is set of important highlights to the documentation for elements used in the control node.
-
-
-
-
-
 
