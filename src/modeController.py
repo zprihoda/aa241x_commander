@@ -15,9 +15,10 @@ from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement
 
 # Global Variables
-TAKEOFF_ALT_THRESHOLD = 30
-RETURN_BATTERY_THRESHOLD = 0.20   # battery threshold for returning home
-HOME_POS_THRESH = 1.0
+TAKEOFF_ALT_THRESHOLD = 30          # Altitude at which we have finished take-off
+RETURN_BATTERY_THRESHOLD = 0.20     # battery threshold for returning home
+HOME_POS_THRESH = 1.0               # Position error Threshold for determining once we're home
+IDLE_TIME = 5.0                     # sit in idle for this long before taking off
 
 class Mode(Enum):
     """State machine modes"""
@@ -41,6 +42,7 @@ class ModeController():
         self.beacons_localized = []
         self.new_beacon_detected = False
         self.drone_mode = None      # MANUAL/ALTITUDE/POSITION/OFFBOARD etc.
+        self.battery_level = 0      # assume we are empty until told otherwise
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
@@ -83,6 +85,7 @@ class ModeController():
 
     def batteryCallback(self,msg):
         self.battery_status = msg
+        self.battery_level = msg.battery_level
 
 
     ## Decision Functions
@@ -100,12 +103,12 @@ class ModeController():
 
     def searchFinished(self):
         # TODO: where are we getting nodes_localized (should be published by beaconLocalization script)
-        return self.nodes_localized >= TARGET_NUM_NODES
+        return len(self.beacons_localized) >= TARGET_NUM_NODES
 
     def batteryLow(self):
         # TODO: Implement a distance dependent cutoff
         # maybe: if level <= thresh + dist*scaling
-        return self.battery_status.battery_level <= RETURN_BATTERY_THRESHOLD
+        return self.battery_level <= RETURN_BATTERY_THRESHOLD
 
     def hasReturnedHome(self):
         pos = self.pose.position
@@ -130,7 +133,8 @@ class ModeController():
 
         if self.mode == Mode.IDLE:
             if not self.mission_complete and self.drone_mode == "OFFBOARD":
-                self.mode = Mode.TAKEOFF
+                if rospy.get_rostime() - self.mode_start_time > rospy.Duration.from_sec(IDLE_TIME):
+                    self.mode = Mode.TAKEOFF
 
         elif self.mode == Mode.TAKEOFF:
             if self.hasTakenOff():
