@@ -11,7 +11,7 @@ import numpy.linalg as npl
 # Import message types
 from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
-from mavros_msgs import State
+from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement
 
 # Global Variables
@@ -40,6 +40,7 @@ class ModeController():
         self.home_pos = None
         self.beacons_localized = []
         self.new_beacon_detected = False
+        self.drone_mode = None      # MANUAL/ALTITUDE/POSITION/OFFBOARD etc.
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
@@ -59,7 +60,8 @@ class ModeController():
 
     ## Callbacks
     def stateCallback(self,msg):
-        self.current_state = msg;
+        self.current_state = msg
+        self.drone_mode = msg.mode
 
     def poseCallback(self,msg):
         if self.home_pos is None:
@@ -88,27 +90,27 @@ class ModeController():
     #   I opted to make functions for now so we can include more complicated logic if we desire
     def hasTakenOff(self):
         # TODO: Does z correctly measure altitude? (it might measure some relative pose)
-        return self.pose.position.z > TAKEOFF_ALT_THRESHOLD:
+        return self.pose.position.z > TAKEOFF_ALT_THRESHOLD
 
     def newBeaconDetected(self):
-        return self.new_beacon_detected:
+        return self.new_beacon_detected
 
     def localizationFinished(self):
         return self.loc_done
 
     def searchFinished(self):
         # TODO: where are we getting nodes_localized (should be published by beaconLocalization script)
-        return self.nodes_localized >= TARGET_NUM_NODES:
+        return self.nodes_localized >= TARGET_NUM_NODES
 
     def batteryLow(self):
         # TODO: Implement a distance dependent cutoff
         # maybe: if level <= thresh + dist*scaling
-        return self.battery_status.battery_level <= RETURN_BATTERY_THRESHOLD:
+        return self.battery_status.battery_level <= RETURN_BATTERY_THRESHOLD
 
     def hasReturnedHome(self):
         pos = self.pose.position
         cur_pos = np.array([pos.x,pos.y,pos.z])
-        return npl.norm([self.home_pose-cur_pos]) <= HOME_POS_THRESH:
+        return npl.norm([self.home_pose-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
         # TODO: How do we determine if we've landed
@@ -124,7 +126,7 @@ class ModeController():
             self.mode_start_time = rospy.get_rostime()
 
         if self.mode == Mode.IDLE:
-            if not self.mission_complete and self.current_state.mode == "OFFBOARD":
+            if not self.mission_complete and self.drone_mode == "OFFBOARD":
                 self.mode = Mode.TAKEOFF
 
         elif self.mode == Mode.TAKEOFF:
