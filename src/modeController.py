@@ -125,6 +125,9 @@ class ModeController():
             self.prev_mode = self.mode
             self.mode_start_time = rospy.get_rostime()
 
+        if self.batteryLow() and self.mode not in [Mode.IDLE, Mode.LANDING]:    # we want this to override regardless of mode
+            self.mode = Mode.HOME
+
         if self.mode == Mode.IDLE:
             if not self.mission_complete and self.drone_mode == "OFFBOARD":
                 self.mode = Mode.TAKEOFF
@@ -136,7 +139,7 @@ class ModeController():
         elif self.mode == Mode.SEARCH:
             if self.newBeaconDetected():
                 self.mode = Mode.LOCALIZATION
-            if self.searchFinished() or self.batteryLow():
+            if self.searchFinished():
                 self.mode = Mode.HOME
 
         elif self.mode == Mode.LOCALIZATION:
