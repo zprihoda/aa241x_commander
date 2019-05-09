@@ -12,7 +12,7 @@ import numpy.linalg as npl
 from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
 from mavros_msgs import State
-
+from aa241x_mission.msg import SensorMeasurement
 
 # Global Variables
 TAKEOFF_ALT_THRESHOLD = 30
@@ -37,9 +37,9 @@ class ModeController():
         self.prev_mode = None
         self.nav_done = False
         self.mission_complete = False
-
         self.home_pos = None
-
+        self.beacons_localized = []
+        self.new_beacon_detected = False
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
@@ -47,15 +47,12 @@ class ModeController():
         # subscribers
         rospy.Subscriber('/mavros/state', State, self.stateCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
-
+        rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
 
         """Naviagator will publish a nav_done mesage when the current navigation task is complete
         Examples: Once we have reached taken off (reached a certain altitude), once we are done localizing,
         once we have returned home, etc."""
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
-
-        # TODO: What is the message type here
-        rospy.Subscriber('/beaconDetects',Bool,self.beaconCallback)
 
         # TODO: Where do we get battery level from?
         rospy.Subscriber('/batteryLevel',Float32,self.batteryCallback)
@@ -72,11 +69,15 @@ class ModeController():
         self.pose = msg.pose
 
     def locDoneCallback(self,msg):
-        self.loc_done = True
+        self.loc_done = msg.done
 
     def beaconCallback(self,msg):
-        # TODO: determine whether any beacons detected are new
-        self.new_beacon_detected = True
+        meas_ids = msg.id
+        new_ids = list(set(meas_ids)-set(self.beacons_localized))
+        if len(new_ids) > 0:
+            self.new_beacon_detected = True
+        else:
+            self.new_beacon_detected = False
 
     def batteryCallback(self,msg):
         self.battery_status = msg
