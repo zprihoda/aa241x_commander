@@ -11,6 +11,7 @@ import numpy.linalg as npl
 # Import message types
 from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
+from sensor_msgs.msg import BatteryState
 from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement
 
@@ -19,6 +20,8 @@ TAKEOFF_ALT_THRESHOLD = 30          # Altitude at which we have finished take-of
 RETURN_BATTERY_THRESHOLD = 0.20     # battery threshold for returning home
 HOME_POS_THRESH = 1.0               # Position error Threshold for determining once we're home
 IDLE_TIME = 5.0                     # sit in idle for this long before taking off
+MAX_BATTERY_CHARGE = 4400.          # Maximum battery charge in Mah
+
 
 class Mode(Enum):
     """State machine modes"""
@@ -42,7 +45,7 @@ class ModeController():
         self.beacons_localized = []
         self.new_beacon_detected = False
         self.drone_mode = None      # MANUAL/ALTITUDE/POSITION/OFFBOARD etc.
-        self.battery_level = 0      # assume we are empty until told otherwise
+        self.battery_level = 0.0      # assume we are empty until told otherwise
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
@@ -50,15 +53,13 @@ class ModeController():
         # subscribers
         rospy.Subscriber('/mavros/state', State, self.stateCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
+        rospy.Subscriber('/mavros/battery',BatteryState,self.batteryCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
 
         """Naviagator will publish a nav_done mesage when the current navigation task is complete
         Examples: Once we have reached taken off (reached a certain altitude), once we are done localizing,
         once we have returned home, etc."""
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
-
-        # TODO: Where do we get battery level from?
-        rospy.Subscriber('/batteryLevel',Float32,self.batteryCallback)
 
     ## Callbacks
     def stateCallback(self,msg):
@@ -85,7 +86,7 @@ class ModeController():
 
     def batteryCallback(self,msg):
         self.battery_status = msg
-        self.battery_level = msg.battery_level
+        self.battery_level = msg.charge/MAX_CHARGE  # 1.0 = full, 0.0 = empty
 
 
     ## Decision Functions
