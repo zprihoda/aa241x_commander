@@ -3,8 +3,12 @@ import rospy
 
 
 """
+TODO: Update current subscribers (see modeController)
 TODO: Get height from pixhawk
     May need another subscriber -> store height as its published
+TODO: Needs to publish aa241x_mission.msg.PersonEstimate (see aa241x_mission repo)
+TODO: Need to define BeaconsLocalization message    (see Zach)
+TODO: Needs to publish to /localizer/localized_beacons
 """
 
 

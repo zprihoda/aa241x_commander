@@ -60,6 +60,7 @@ class ModeController():
         Examples: Once we have reached taken off (reached a certain altitude), once we are done localizing,
         once we have returned home, etc."""
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
+        rospy.Subscriber('/localizer/localized_beacons',Bool,self.localizedBeaconCallback)
 
     ## Callbacks
     def stateCallback(self,msg):
@@ -88,6 +89,8 @@ class ModeController():
         self.battery_status = msg
         self.battery_level = msg.charge/MAX_CHARGE  # 1.0 = full, 0.0 = empty
 
+    def localizedBeaconCallback(self,msg):
+        self.beacons_localized = msg.ids
 
     ## Decision Functions
     # NOTE: some of these could be replaced by 1 line if statements in determineMode
