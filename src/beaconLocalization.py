@@ -2,13 +2,16 @@ import numpy as np
 import rospy
 
 from aa241x_mission.msg import SensorMeasurement, PersonEstimate
+from aa241x_commander.msg import LocalizedBeacons
 from geometry_msgs.msg import Pose, PoseStamped
 
 
 """
-TODO: Need to define BeaconsLocalization message    (see Zach)
-
+Beacon Localization Script for Autonomous Mission
 """
+
+
+CERTAINTY_THRESHOLD = 0.99    #publish ocalized beacon once we're 99% sure of its location within 1 meter
 
 
 def getUncertainty(h):
@@ -29,7 +32,7 @@ class BeaconLocalization():
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
 
         # Publishers
-        # self.obj_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
+        self.obj_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
         self.person_pub = rospy.Publisher('/person_found',PersonEstimate,queue_size=10)
 
     def beaconCallback(self,msg):
@@ -77,4 +80,3 @@ class BeaconLocalization():
 if __name__ == "__main__":
     localizer = BeaconLocalization()
     localizer.run()
-
