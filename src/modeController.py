@@ -36,8 +36,10 @@ class ModeController():
         self.mode = Mode.IDLE
         self.prev_mode = None
         self.nav_done = False
+        self.mission_complete = False
 
         self.home_pos = None
+
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
@@ -45,6 +47,7 @@ class ModeController():
         # subscribers
         rospy.Subscriber('/mavros/state', State, self.stateCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
+
 
         """Naviagator will publish a nav_done mesage when the current navigation task is complete
         Examples: Once we have reached taken off (reached a certain altitude), once we are done localizing,
@@ -120,7 +123,8 @@ class ModeController():
             self.mode_start_time = rospy.get_rostime()
 
         if self.mode == Mode.IDLE:
-            pass
+            if not self.mission_complete and self.current_state.mode == "OFFBOARD":
+                self.mode = Mode.TAKEOFF
 
         elif self.mode == Mode.TAKEOFF:
             if self.hasTakenOff():
@@ -143,6 +147,7 @@ class ModeController():
         elif self.mode == Mode.LANDING:
             # TODO: We may want to switch off once we've landed (disarm)
             if self.hasLanded():
+                self.mission_complete = True
                 self.mode = Mode.IDLE
 
     ## Process Functions
