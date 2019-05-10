@@ -1,4 +1,6 @@
 import numpy as np
+import numpy.linalg as npl
+import scipy.stats as sps
 import rospy
 
 from aa241x_mission.msg import SensorMeasurement, PersonEstimate
@@ -11,7 +13,10 @@ Beacon Localization Script for Autonomous Mission
 """
 
 
-CERTAINTY_THRESHOLD = 0.99    #publish ocalized beacon once we're 99% sure of its location within 1 meter
+CERTAINTY_THRESHOLD = 0.90    # publish localized beacon once we're 90% sure of its location within 1 meter
+POS_DESIRED = 1               # position accuracy corresponding to certainty threshold
+
+Z_THRESH = sps.norm.ppf((1+CERTAINTY_THRESHOLD)/2)  # convert certainty to sigma (95%->~2 sigma)
 
 
 def getUncertainty(h):
@@ -23,6 +28,7 @@ class BeaconLocalization():
 
     def __init__(self):
         self.beacon_locations = {}      # stores beacon position and uncertainty {id : [(x,y),sigma]}
+        self.h = None
 
         ## Init Node
         rospy.init_node('BeaconLocalizer', anonymous=True)
@@ -32,7 +38,7 @@ class BeaconLocalization():
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
 
         # Publishers
-        self.obj_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
+        self.lbeac_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
         self.person_pub = rospy.Publisher('/person_found',PersonEstimate,queue_size=10)
 
     def beaconCallback(self,msg):
@@ -46,28 +52,54 @@ class BeaconLocalization():
 
             # Update/Store Estimates
             if id_num in self.beacon_locations.keys():
-                self.beacon_locations[id_num] = updateBeaconLocation(np.array([n,e]),sigma)
+                self.beacon_locations[id_num] = updateBeaconLocation(id_num,np.array([n,e]),sigma)
             else:
                 self.beacon_locations[id_num] = [np.array([n,e]), sigma]
 
     def poseCallback(self,msg):
         self.h = msg.pose.position.z
 
+    def updateBeaconLocation(self,id_num,y_k,sigma):
+        """ Kalman Filter with 0 dynamics """
+        r_k = np.identity(2) * (sigma) ** 2
 
-    def updateBeaconLocation(self,x,sigma):
-        # TODO: Implement Kalman Filter
-        pass
+        prior_mean,prior_sigma = self.beacon_locations[id_num]
+        prior_covariance = np.identity(2) * post_sigma**2
+        sigma = np.identity(2)*sigma
 
-
+        K = np.matmul(prior_cov, np.linalg.inv(r_k + prior_cov))
+        new_mean = prior_mean + np.matmul(K, y_k - prior_mean)
+        new_cov = prior_cov - np.matmul(K, prior_cov)
+        new_sigma = np.sqrt(new_cov[0,0])
+        return new_mean, new_sigma
 
     def publish(self):
-        # TODO: publish beacon_locations
-        # Publish all beacons to person estimate
-        # Only publish beacons locations we are satisfied to localized_beacons
-        #       localized_beacons will b used by the mode_controller to determine when to swtich to localize mode,
-        #       and will be used by the navigator to determine when localization is done
-        pass
 
+        lbeac = LocalizedBeacons()
+        lbeac.ids = []
+        lbeac.n = []
+        lbeac.e = []
+        lbeac.sigma = []
+
+        for beacon_id in self.beacon_locations.keys():
+            pos,sigma = self.beacon_locations[beacon_id]
+
+            # Publish to person estimate
+            msg = PersonEstimate()
+            msg.header.stamp = rospy.Time.now()
+            msg.id = beacon_id
+            msg.n = pos[0]
+            msg.e = pos[1]
+            self.person_pub.publish(msg)
+
+            # publish to localized_beacons
+            if sigma/POS_DESIRED <= Z_THRESH:
+                lbeac.ids.append(beacon_id)
+                lbeac.n.append(pos[0])
+                lbeac.e.append(pos[1])
+                lbeac.sigma.append(sigma)
+        lbeac.num_beacons = len(lbeac.ids)
+        self.lbeac_pub.publish(lbeac)
 
     def run(self):
         """ main loop """

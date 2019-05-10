@@ -1,7 +1,7 @@
 # A list of localized beacons and their localization status
 
 # the number of measurements (N) contained in this message
-int32 num_measurements
+int32 num_beacons
 
 # list of ids of the localized beacons
 int32[] ids
