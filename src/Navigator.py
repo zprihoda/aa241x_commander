@@ -118,11 +118,15 @@ class Navigator():
                     self.search_wp_idx += 1
 
         elif self.mode == Mode.LOCALIZATION:
-            beacon_id = sort(unlocalized_beacons.keys())[0]
-            beacon_pos = unlocalized_beacons[beacon_id]
-            self.waypoint_n = [beacon_pos[0]]
-            self.waypoint_e = [beacon_pos[1]]
-            self.waypoint_alt = LOCALIZE_ALT
+            if len(unlocalized_beacons.keys()) == 0:
+                self.loc_done = True
+            else:
+                self.loc_done = False
+                beacon_id = sort(unlocalized_beacons.keys())[0]
+                beacon_pos = unlocalized_beacons[beacon_id]
+                self.waypoint_n = [beacon_pos[0]]
+                self.waypoint_e = [beacon_pos[1]]
+                self.waypoint_alt = LOCALIZE_ALT
 
         elif self.mode == Mode.HOME:
             self.waypoint_n = [self.home_pos[0]]
