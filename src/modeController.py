@@ -40,7 +40,8 @@ class ModeController():
 
         self.mode = Mode.IDLE
         self.prev_mode = None
-        self.nav_done = False
+        self.loc_done = False
+        self.search_done = False
         self.mission_complete = False
         self.home_pos = None
         self.beacons_localized = []
@@ -57,6 +58,8 @@ class ModeController():
         rospy.Subscriber('/mavros/battery',BatteryState,self.batteryCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
+        rospy.Subscriber('/navigator/search_done', Bool, self.searchDoneCallback)
+
         rospy.Subscriber('/localizer/localized_beacons',Bool,self.localizedBeaconCallback)
 
     ## Callbacks
@@ -73,6 +76,9 @@ class ModeController():
 
     def locDoneCallback(self,msg):
         self.loc_done = msg.done
+
+    def searchDoneCallback(self,msg):
+        self.search_done = True
 
     def beaconCallback(self,msg):
         meas_ids = msg.id
@@ -104,7 +110,7 @@ class ModeController():
 
     def searchFinished(self):
         # TODO: where are we getting nodes_localized (should be published by beaconLocalization script)
-        return len(self.beacons_localized) >= TARGET_NUM_NODES
+        return len(self.beacons_localized) >= TARGET_NUM_NODES or self.search_done
 
     def batteryLow(self):
         # TODO: Implement a distance dependent cutoff
