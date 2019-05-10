@@ -2,6 +2,7 @@
 
 """
 Mode Controller Script for Autonomous Mission
+Handles the FSM and high level mission logic
 """
 
 import rospy
@@ -55,10 +56,6 @@ class ModeController():
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/battery',BatteryState,self.batteryCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
-
-        """Naviagator will publish a nav_done mesage when the current navigation task is complete
-        Examples: Once we have reached taken off (reached a certain altitude), once we are done localizing,
-        once we have returned home, etc."""
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
         rospy.Subscriber('/localizer/localized_beacons',Bool,self.localizedBeaconCallback)
 

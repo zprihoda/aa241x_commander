@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+Beacon Localization Script for Autonomous Mission
+"""
+
 import numpy as np
 import numpy.linalg as npl
 import scipy.stats as sps
@@ -8,14 +14,8 @@ from aa241x_commander.msg import LocalizedBeacons
 from geometry_msgs.msg import Pose, PoseStamped
 
 
-"""
-Beacon Localization Script for Autonomous Mission
-"""
-
-
 CERTAINTY_THRESHOLD = 0.90    # publish localized beacon once we're 90% sure of its location within 1 meter
 POS_DESIRED = 1               # position accuracy corresponding to certainty threshold
-
 Z_THRESH = sps.norm.ppf((1+CERTAINTY_THRESHOLD)/2)  # convert certainty to sigma (95%->~2 sigma)
 
 

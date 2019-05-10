@@ -54,6 +54,7 @@ set(Eigen3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIRS})
 add_message_files(
   FILES
   LocalizedBeacons.msg
+  Waypoint.msg
 )
 
 ## Generate services in the 'srv' folder
