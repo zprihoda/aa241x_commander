@@ -14,8 +14,6 @@ from searchPath import search_path
 # Import message types
 from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
-from sensor_msgs.msg import BatteryState
-from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement
 
 
