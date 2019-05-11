@@ -162,10 +162,10 @@ class ModeController():
             self.prev_mode = self.mode
             self.mode_start_time = rospy.get_rostime()
 
-        if self.batteryLow() and self.mode not in [Mode.IDLE, Mode.LANDING]:    # we want this to override regardless of mode
+        if self.batteryLow() and self.mode not in [Mode.IDLE, Mode.LANDING, Mode.HOME]:    # we want this to override regardless of mode
             self.mode = Mode.HOME
 
-        if self.mode == Mode.IDLE:
+        elif self.mode == Mode.IDLE:
             if not self.mission_complete and self.drone_mode == "OFFBOARD":
                 if self.hasInitialized():
                     self.mode = Mode.TAKEOFF
