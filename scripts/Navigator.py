@@ -7,6 +7,7 @@ Handles pathplanning and setting of waypoints
 
 import rospy
 import numpy.linalg as npl
+import numpy as np
 from modeController import Mode
 from searchPath import search_path
 

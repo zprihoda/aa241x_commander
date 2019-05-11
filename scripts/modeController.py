@@ -8,6 +8,7 @@ Handles the FSM and high level mission logic
 import rospy
 from enum import Enum
 import numpy.linalg as npl
+import numpy as np
 
 # Import message types
 from std_msgs.msg import Int8, Bool, Float32
@@ -105,7 +106,7 @@ class ModeController():
 
     def batteryCallback(self,msg):
         self.battery_status = msg
-        self.battery_level = msg.charge/MAX_CHARGE  # 1.0 = full, 0.0 = empty
+        self.battery_level = msg.charge/MAX_BATTERY_CHARGE  # 1.0 = full, 0.0 = empty
 
     def localizedBeaconCallback(self,msg):
         self.beacons_localized = msg.ids
