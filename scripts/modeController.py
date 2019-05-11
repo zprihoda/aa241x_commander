@@ -15,6 +15,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 from sensor_msgs.msg import BatteryState
 from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement
+from aa241x_commander.msg import LocalizedBeacons
 
 # Global Variables
 TAKEOFF_ALT_THRESHOLD = 30          # Altitude at which we have finished take-off
@@ -60,7 +61,7 @@ class ModeController():
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
         rospy.Subscriber('/navigator/search_done', Bool, self.searchDoneCallback)
 
-        rospy.Subscriber('/localizer/localized_beacons',Bool,self.localizedBeaconCallback)
+        rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
 
     ## Callbacks
     def stateCallback(self,msg):
@@ -75,10 +76,10 @@ class ModeController():
         self.pose = msg.pose
 
     def locDoneCallback(self,msg):
-        self.loc_done = msg.done
+        self.loc_done = msg.data
 
     def searchDoneCallback(self,msg):
-        self.search_done = True
+        self.search_done = msg.data
 
     def beaconCallback(self,msg):
         meas_ids = msg.id
