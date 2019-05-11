@@ -98,7 +98,7 @@ class Controller():
 
     ## Callbacks
     def modeCallback(self,msg):
-        self.mode = msg.data
+        self.mode = Mode(msg.data)
 
     def poseCallback(self,msg):
         pos = msg.pose.position
@@ -110,8 +110,9 @@ class Controller():
         self.vel = np.array([vel.y,vel.x])
 
     def waypointCallback(self,msg):
-        self.waypoint = msg
-        self.prev_alt = msg.alt[-1]
+        if len(msg.alt) > 0:
+            self.waypoint = msg
+            self.prev_alt = msg.alt[-1]
 
     ## Main Loop for Navigator
     def controlLoop(self):

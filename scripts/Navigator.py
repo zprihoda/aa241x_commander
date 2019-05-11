@@ -8,7 +8,7 @@ Handles pathplanning and setting of waypoints
 import rospy
 import numpy.linalg as npl
 from modeController import Mode
-from aa241x_commander.msg import Waypoint
+from aa241x_commander.msg import Waypoint, LocalizedBeacons
 from searchPath import search_path
 
 # Import message types
@@ -32,9 +32,9 @@ class Navigator():
         self.mode = None
 
         self.search_wp_idx = 0
-        self.waypoint_n = None
-        self.waypoint_e = None
-        self.waypoint_alt = None
+        self.waypoint_n = []
+        self.waypoint_e = []
+        self.waypoint_alt = []
         self.loc_done = False
         self.search_done = False
 
@@ -48,12 +48,12 @@ class Navigator():
         rospy.Subscriber('/modeController/mode',Int8, self.modeCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
-        rospy.Subscriber('/localizer/localized_beacons',Bool,self.localizedBeaconCallback)
+        rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
 
 
     ## Callbacks
     def modeCallback(self,msg):
-        self.mode = msg.data
+        self.mode = Mode(msg.data)
 
     def poseCallback(self,msg):
         if self.home_pos is None:

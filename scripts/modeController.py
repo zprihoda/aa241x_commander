@@ -172,7 +172,7 @@ class ModeController():
     def publish(self):
         """ publish the fsm mode """
         msg = Int8()
-        msg.data = self.mode
+        msg.data = self.mode.value
         self.mode_publisher.publish(msg)
 
     def run(self):
