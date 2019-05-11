@@ -71,6 +71,8 @@ class Controller():
         self.pos = None     # current drone position
         self.vel = None
         self.prev_alt = 0   # if no altitude given, maintain previous
+        self.waypoint = None
+        self.drone_mode = None
 
         self.e_offset = 0
         self.n_offset = 0
@@ -82,6 +84,10 @@ class Controller():
         self.cmd.type_mask = 2499   # command Vx,Vy,Pz
         self.cmd.yaw = 0
         self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED    # use the local frame
+        PT = PositionTarget
+        self.cmd.type_mask = (PT.IGNORE_VX | PT.IGNORE_VY | PT.IGNORE_VZ | PT.IGNORE_AFX |
+            PT.IGNORE_AFY | PT.IGNORE_AFZ | PT.IGNORE_YAW_RATE);
+
 
         self.cmd_pos = Point()  # NOTE: this is defined in ENU
         self.cmd_pos.x = 0  # E
@@ -100,17 +106,23 @@ class Controller():
         rospy.Subscriber('/navigator/waypoint', Waypoint, self.waypointCallback)
         rospy.Subscriber('/modeController/mode',Int8, self.modeCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
-        rospy.Subscriber('/mavros/local_position/velocity', TwistStamped, self.velCallback)
+        rospy.Subscriber('/mavros/local_position/velocity_local', TwistStamped, self.velCallback)
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
+        rospy.Subscriber('/mavros/state', State, self.stateCallback)
+
 
     ## Callbacks
+    def stateCallback(self,msg):
+        self.current_state = msg
+        self.drone_mode = msg.mode
+
     def modeCallback(self,msg):
         self.mode = Mode(msg.data)
 
     def poseCallback(self,msg):
         pos = msg.pose.position
         self.pos = np.array([pos.x+self.e_offset, pos.y+self.n_offset])
-        self.alt = pos.z+ self.u_offset
+        self.alt = pos.z + self.u_offset
 
     def velCallback(self,msg):
         vel = msg.twist.linear
@@ -129,6 +141,8 @@ class Controller():
 
     ## Main Loop for Navigator
     def controlLoop(self):
+        if self.waypoint is None:
+            return
 
         # Specialized Controllers
         if self.mode == Mode.IDLE:  # do nothing
@@ -136,30 +150,30 @@ class Controller():
             self.cmd_vel.y = 0
             self.cmd_pos.z = self.prev_alt
         elif self.mode == Mode.TAKEOFF:
-            p = np.array([self.waypoint.e,self.waypoint.n])
+            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt
+            self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.SEARCH:
             p1 = np.array([self.waypoint.e[0], self.waypoint.n[0]])
             p2 = np.array([self.waypoint.e[1], self.waypoint.n[1]])
             cmd_vel = pathControler(p1,p2,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt
+            self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.LOCALIZATION:
             p = np.array([self.waypoint.e,self.waypoint.n])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt
+            self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.HOME:
             p = np.array([self.waypoint.e,self.waypoint.n])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt
+            self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.LANDING:
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
@@ -169,10 +183,12 @@ class Controller():
     ## Process Functions
     def publish(self):
         """ publish waypoints and navigation messages """
-        self.cmd.header.stamp = rospy.Time.now();
-        self.cmd.position = self.cmd_pos;
-        self.cmd.velocity = self.cmd_vel;
-        self.cmd_pub.publish(self.cmd);
+        if self.drone_mode != 'OFFBOARD':
+            return
+        self.cmd.header.stamp = rospy.get_rostime() 
+        self.cmd.position = self.cmd_pos
+        self.cmd.velocity = self.cmd_vel
+        self.cmd_pub.publish(self.cmd)
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz

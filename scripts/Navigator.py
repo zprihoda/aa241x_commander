@@ -103,35 +103,35 @@ class Navigator():
     def navigate(self):
 
         if self.mode == Mode.IDLE:  # no waypoint
-            self.waypoint_n = []
             self.waypoint_e = []
+            self.waypoint_n = []
             self.waypoint_alt = []
 
         elif self.mode == Mode.TAKEOFF:
-            self.waypoint_n = [self.home_pos[0]]
-            self.waypoint_e = [self.home_pos[1]]
+            self.waypoint_e = [self.home_pos[0]]
+            self.waypoint_n = [self.home_pos[1]]
             self.waypoint_alt = [40]  # set altitude waypoint above 30
 
         elif self.mode == Mode.SEARCH:
             # TODO: implement search mode navigation
             if self.search_wp_idx >= len(search_path):
                 self.search_done = True
-                self.waypoint_n = []
                 self.waypoint_e = []
+                self.waypoint_n = []
                 self.waypoint_alt = []
             else:
                 wp = np.array(search_path[self.search_wp_idx])
                 pos = np.array([self.pose.pos.x, self.pose.pos.y])
 
                 if self.search_wp_idx == 0:     # set waypoint as a single point
-                    self.waypoint_n = [wp[0]]
-                    self.waypoint_e = [wp[1]]
+                    self.waypoint_e = [wp[0]]
+                    self.waypoint_n = [wp[1]]
                     self.waypoint_alt = [SEARCH_ALT]
                 else:   # set waypoint as a path
                     wp = np.array(search_path[self.search_wp_idx])
                     wp_prev = np.array(search_path[self.search_wp_idx-1])
-                    self.waypoint_n = [wp_prev[0],wp[0]]
-                    self.waypoint_e = [wp_prev[1],wp[1]]
+                    self.waypoint_e = [wp_prev[0],wp[0]]
+                    self.waypoint_n = [wp_prev[1],wp[1]]
                     self.waypoint_alt = [SEARCH_ALT,SEARCH_ALT]
 
                 if npl.norm(wp-pos) < PATH_THRESH:
@@ -144,18 +144,18 @@ class Navigator():
                 self.loc_done = False
                 beacon_id = sort(unlocalized_beacons.keys())[0]
                 beacon_pos = unlocalized_beacons[beacon_id]
-                self.waypoint_n = [beacon_pos[0]]
-                self.waypoint_e = [beacon_pos[1]]
+                self.waypoint_e = [beacon_pos[0]]
+                self.waypoint_n = [beacon_pos[1]]
                 self.waypoint_alt = LOCALIZE_ALT
 
         elif self.mode == Mode.HOME:
-            self.waypoint_n = [self.home_pos[0]]
-            self.waypoint_e = [self.home_pos[1]]
+            self.waypoint_e = [self.home_pos[0]]
+            self.waypoint_n = [self.home_pos[1]]
             self.waypoint_alt = [30]
 
         elif self.mode == Mode.LANDING:
-            self.waypoint_n = [self.home_pos[0]]
-            self.waypoint_e = [self.home_pos[1]]
+            self.waypoint_e = [self.home_pos[0]]
+            self.waypoint_n = [self.home_pos[1]]
             self.waypoint_alt = []
 
 
@@ -163,8 +163,8 @@ class Navigator():
     def publish(self):
         """ publish waypoints and navigation messages """
         msg = Waypoint()
-        msg.n = self.waypoint_n
         msg.e = self.waypoint_e
+        msg.n = self.waypoint_n
         msg.alt = self.waypoint_alt
         self.waypoint_pub.publish(msg)
 
