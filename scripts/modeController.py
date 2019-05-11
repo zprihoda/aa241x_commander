@@ -14,7 +14,7 @@ from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
 from sensor_msgs.msg import BatteryState
 from mavros_msgs.msg import State
-from aa241x_mission.msg import SensorMeasurement
+from aa241x_mission.msg import SensorMeasurement, MissionState
 from aa241x_commander.msg import LocalizedBeacons
 
 # Global Variables
@@ -49,6 +49,13 @@ class ModeController():
         self.new_beacon_detected = False
         self.drone_mode = None      # MANUAL/ALTITUDE/POSITION/OFFBOARD etc.
         self.battery_level = 0.0      # assume we are empty until told otherwise
+        self.battery_status = None
+
+        self.e_offset = 0
+        self.n_offset = 0
+        self.u_offset = 0
+
+        self.pos = None
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
@@ -60,8 +67,8 @@ class ModeController():
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
         rospy.Subscriber('/navigator/search_done', Bool, self.searchDoneCallback)
-
         rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
+        rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
     ## Callbacks
     def stateCallback(self,msg):
@@ -69,11 +76,17 @@ class ModeController():
         self.drone_mode = msg.mode
 
     def poseCallback(self,msg):
-        if self.home_pos is None:
-            pos = msg.pose.position
-            self.home_pos = np.array([pos.x,pos.y,TAKEOFF_ALT_THRESHOLD])
+        pos = msg.pose.position
+        x = pos.x + self.e_offset
+        y = pos.y + self.n_offset
+        z = pos.z + self.u_offset
+        if self.home_pos is None and self.e_offset != 0:
+            self.home_pos = np.array([x,y,z])
         self.pose_header = msg.header
-        self.pose = msg.pose
+        self.pos = msg.pose.position
+        self.pos.x = x
+        self.pos.y = y
+        self.pos.z = z
 
     def locDoneCallback(self,msg):
         self.loc_done = msg.data
@@ -96,12 +109,24 @@ class ModeController():
     def localizedBeaconCallback(self,msg):
         self.beacons_localized = msg.ids
 
+    def missionStateCallback(self,msg):
+        self.e_offset = msg.e_offset
+        self.n_offset = msg.n_offset
+        self.u_offset = msg.u_offset
+
     ## Decision Functions
     # NOTE: some of these could be replaced by 1 line if statements in determineMode
     #   I opted to make functions for now so we can include more complicated logic if we desire
+    def hasInitialized(self):
+        check1 = rospy.get_rostime() - self.mode_start_time > rospy.Duration.from_sec(IDLE_TIME)
+        check2 = self.e_offset != 0
+        check3 = self.battery_status is not None
+        check4 = self.home_pos is not None
+        return check1 and check2 and check3 and check4
+
     def hasTakenOff(self):
         # TODO: Does z correctly measure altitude? (it might measure some relative pose)
-        return self.pose.position.z > TAKEOFF_ALT_THRESHOLD
+        return self.pos.z > TAKEOFF_ALT_THRESHOLD
 
     def newBeaconDetected(self):
         return self.new_beacon_detected
@@ -116,12 +141,13 @@ class ModeController():
     def batteryLow(self):
         # TODO: Implement a distance dependent cutoff
         # maybe: if level <= thresh + dist*scaling
-        return self.battery_level <= RETURN_BATTERY_THRESHOLD
+        # return self.battery_level <= RETURN_BATTERY_THRESHOLD
+        return False
 
     def hasReturnedHome(self):
-        pos = self.pose.position
+        pos = self.pos
         cur_pos = np.array([pos.x,pos.y,pos.z])
-        return npl.norm([self.home_pose-cur_pos]) <= HOME_POS_THRESH
+        return npl.norm([self.home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
         # TODO: How do we determine if we've landed
@@ -141,7 +167,7 @@ class ModeController():
 
         if self.mode == Mode.IDLE:
             if not self.mission_complete and self.drone_mode == "OFFBOARD":
-                if rospy.get_rostime() - self.mode_start_time > rospy.Duration.from_sec(IDLE_TIME):
+                if self.hasInitialized():
                     self.mode = Mode.TAKEOFF
 
         elif self.mode == Mode.TAKEOFF:
