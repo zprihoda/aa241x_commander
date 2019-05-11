@@ -8,13 +8,14 @@ Handles pathplanning and setting of waypoints
 import rospy
 import numpy.linalg as npl
 from modeController import Mode
-from aa241x_commander.msg import Waypoint, LocalizedBeacons
 from searchPath import search_path
 
 # Import message types
 from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
 from aa241x_mission.msg import SensorMeasurement
+from aa241x_commander.msg import Waypoint, LocalizedBeacons
+from aa241x_mission.msg import MissionState
 
 
 SEARCH_ALT = 50 # desired altitude for performing search mode
@@ -38,17 +39,22 @@ class Navigator():
         self.loc_done = False
         self.search_done = False
 
+        self.e_offset = 0
+        self.n_offset = 0
+        self.u_offset = 0
+
         # publishers
         self.waypoint_pub = rospy.Publisher('/navigator/waypoint', Waypoint, queue_size=10)
         self.loc_done_pub = rospy.Publisher('/navigator/loc_done', Bool, queue_size=10)
         self.search_done_pub = rospy.Publisher('/navigator/search_done', Bool, queue_size=10)
 
-
         # subscribers
         rospy.Subscriber('/modeController/mode',Int8, self.modeCallback)
+        rospy.Subscriber('/modeController/home',Pose, self.homeCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
         rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
+        rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
 
     ## Callbacks
@@ -56,11 +62,19 @@ class Navigator():
         self.mode = Mode(msg.data)
 
     def poseCallback(self,msg):
-        if self.home_pos is None:
-            pos = msg.pose.position
-            self.home_pos = np.array([pos.x,pos.y,TAKEOFF_ALT_THRESHOLD])
+        pos = msg.pose.position
+        x = pos.x + self.e_offset
+        y = pos.y + self.n_offset
+        z = pos.z + self.u_offset
+
         self.pose_header = msg.header
-        self.pose = msg.pose
+        self.pos = msg.pose.position
+        self.pos.x = x
+        self.pos.y = y
+        self.pos.z = z
+
+    def homeCallback(self,msg):
+        self.home_pos = np.array([msg.position.x,msg.position.y,msg.position.z])
 
     def localizedBeaconCallback(self,msg):
         self.localized_beacons = msg.ids
@@ -76,6 +90,13 @@ class Navigator():
                 continue
             else:
                 unlocalized_beacons[meas_ids[i]] = np.array([msg.n[i],msg.e[i]])
+
+    def missionStateCallback(self,msg):
+        self.e_offset = msg.e_offset
+        self.n_offset = msg.n_offset
+        self.u_offset = msg.u_offset
+
+
 
     ## Main Loop for Navigator
     def navigate(self):

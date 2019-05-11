@@ -59,6 +59,7 @@ class ModeController():
 
         # publishers
         self.mode_publisher = rospy.Publisher('/modeController/mode', Int8, queue_size=10)
+        self.home_publisher = rospy.Publisher('/modeController/home', Pose, queue_size=10)
 
         # subscribers
         rospy.Subscriber('/mavros/state', State, self.stateCallback)
@@ -200,6 +201,13 @@ class ModeController():
         msg = Int8()
         msg.data = self.mode.value
         self.mode_publisher.publish(msg)
+
+        if self.home_pos is not None:
+            msg = Pose()
+            msg.position.x = self.home_pos[0]
+            msg.position.y = self.home_pos[1]
+            msg.position.z = self.home_pos[2]
+            self.home_publisher.publish(msg)
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz

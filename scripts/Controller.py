@@ -7,12 +7,14 @@ Controller Script for Autonomous Mission
 import rospy
 import numpy.linalg as npl
 from modeController import Mode
-from aa241x_commander.msg import Waypoint
 
 # Import message types
 from std_msgs.msg import Int8
 from geometry_msgs.msg import PoseStamped, Point, Vector3, TwistStamped
 from mavros_msgs.msg import PositionTarget
+from aa241x_mission.msg import MissionState
+from aa241x_commander.msg import Waypoint
+
 
 
 V_MAX = 5.0     # in m/s
@@ -69,6 +71,10 @@ class Controller():
         self.vel = None
         self.prev_alt = 0   # if no altitude given, maintain previous
 
+        self.e_offset = 0
+        self.n_offset = 0
+        self.u_offset = 0
+
         # setup cmd object
         self.cmd = PositionTarget()
         self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED
@@ -94,7 +100,7 @@ class Controller():
         rospy.Subscriber('/modeController/mode',Int8, self.modeCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/local_position/velocity', TwistStamped, self.velCallback)
-
+        rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
     ## Callbacks
     def modeCallback(self,msg):
@@ -102,8 +108,8 @@ class Controller():
 
     def poseCallback(self,msg):
         pos = msg.pose.position
-        self.pos = np.array([pos.y,pos.x])
-        self.alt = pos.z
+        self.pos = np.array([pos.x+self.e_offset, pos.y+self.n_offset])
+        self.alt = pos.z+ self.u_offset
 
     def velCallback(self,msg):
         vel = msg.twist.linear
@@ -113,6 +119,12 @@ class Controller():
         if len(msg.alt) > 0:
             self.waypoint = msg
             self.prev_alt = msg.alt[-1]
+
+    def missionStateCallback(self,msg):
+        self.e_offset = msg.e_offset
+        self.n_offset = msg.n_offset
+        self.u_offset = msg.u_offset
+
 
     ## Main Loop for Navigator
     def controlLoop(self):

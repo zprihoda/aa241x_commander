@@ -9,7 +9,7 @@ import numpy.linalg as npl
 import scipy.stats as sps
 import rospy
 
-from aa241x_mission.msg import SensorMeasurement, PersonEstimate
+from aa241x_mission.msg import SensorMeasurement, PersonEstimate, MissionState
 from aa241x_commander.msg import LocalizedBeacons
 from geometry_msgs.msg import Pose, PoseStamped
 
@@ -29,6 +29,9 @@ class BeaconLocalization():
     def __init__(self):
         self.beacon_locations = {}      # stores beacon position and uncertainty {id : [(x,y),sigma]}
         self.h = None
+        self.e_offset = 0
+        self.n_offset = 0
+        self.u_offset = 0
 
         ## Init Node
         rospy.init_node('BeaconLocalizer', anonymous=True)
@@ -36,6 +39,7 @@ class BeaconLocalization():
         # Subscribers
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
+        rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
         # Publishers
         self.lbeac_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
@@ -43,6 +47,9 @@ class BeaconLocalization():
 
     def beaconCallback(self,msg):
         sigma = getUncertainty(self.h)
+
+        if self.h is None:
+            return
 
         for i in range(msg.num_measurements):
             # Load Data
@@ -57,7 +64,15 @@ class BeaconLocalization():
                 self.beacon_locations[id_num] = [np.array([n,e]), sigma]
 
     def poseCallback(self,msg):
-        self.h = msg.pose.position.z
+        if self.u_offset == 0:
+            return
+        self.h = msg.pose.position.z + self.u_offset
+
+    def missionStateCallback(self,msg):
+        self.e_offset = msg.e_offset
+        self.n_offset = msg.n_offset
+        self.u_offset = msg.u_offset
+
 
     def updateBeaconLocation(self,id_num,y_k,sigma):
         """ Kalman Filter with 0 dynamics """
