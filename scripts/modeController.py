@@ -24,7 +24,7 @@ RETURN_BATTERY_THRESHOLD = 0.20     # battery threshold for returning home
 HOME_POS_THRESH = 1.0               # Position error Threshold for determining once we're home
 IDLE_TIME = 5.0                     # sit in idle for this long before taking off
 MAX_BATTERY_CHARGE = 4400.          # Maximum battery charge in Mah
-
+TARGET_NUM_NODES = 5
 
 class Mode(Enum):
     """State machine modes"""

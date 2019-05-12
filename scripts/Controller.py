@@ -12,10 +12,9 @@ from modeController import Mode
 # Import message types
 from std_msgs.msg import Int8
 from geometry_msgs.msg import PoseStamped, Point, Vector3, TwistStamped
-from mavros_msgs.msg import PositionTarget
+from mavros_msgs.msg import PositionTarget, State
 from aa241x_mission.msg import MissionState
 from aa241x_commander.msg import Waypoint
-
 
 
 V_MAX = 5.0     # in m/s
@@ -31,7 +30,7 @@ def pointController(p_des,p_cur,v_cur):
 
     return v_cmd
 
-def pathControler(p1,p2,p_cur,v_cur):
+def pathController(p1,p2,p_cur,v_cur):
     direction_vector = np.array([p2[0]-p1[0], p2[1]-p1[1], 0.0])
     direction = direction_vector / np.linalg.norm(direction_vector)
     if direction[2] == 0:
@@ -42,11 +41,13 @@ def pathControler(p1,p2,p_cur,v_cur):
     coeff_b = -(direction_vector[0] + direction_vector[2]) / direction_vector[1]
     coeff_d = - coeff_a*p1[0] - coeff_b*p1[1]
 
-    error = - (coeff_a*p_cur[0] + coeff_b*p_cur[1] + coeff_c*p_cur[2] + coeff_d) / math.sqrt(coeff_a**2 + coeff_b**2 + coeff_c**2)
+    error = - (coeff_a*p_cur[0] + coeff_b*p_cur[1] + coeff_d) / np.sqrt(coeff_a**2 + coeff_b**2 + coeff_c**2)
     normal_vector = np.array([coeff_a, coeff_b, coeff_c])
-    normal_vector = normal_vector / math.sqrt(coeff_a**2 + coeff_b**2 + coeff_c**2)
+    normal_vector = normal_vector / np.sqrt(coeff_a**2 + coeff_b**2 + coeff_c**2)
     direction_vector = direction
 
+    normal_vector = normal_vector[0:-1]     # convert to 2d
+    direction_vector = direction_vector[0:-1]
     velocity = v_cur
     error_dot = np.inner(velocity, normal_vector)
 
@@ -132,6 +133,9 @@ class Controller():
         if len(msg.alt) > 0:
             self.waypoint = msg
             self.prev_alt = msg.alt[-1]
+        else:
+            self.waypoint = msg
+            self.waypoint.alt == [self.prev_alt]
 
     def missionStateCallback(self,msg):
         self.e_offset = msg.e_offset
@@ -141,7 +145,8 @@ class Controller():
 
     ## Main Loop for Navigator
     def controlLoop(self):
-        if self.waypoint is None:
+        if self.waypoint is None or len(self.waypoint.n) < 1:
+            self.cmd_pos.z = 0
             return
 
         # Specialized Controllers
@@ -156,9 +161,11 @@ class Controller():
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.SEARCH:
+            if len(self.waypoint.e) < 2:    # wait until Navigator updates
+                return
             p1 = np.array([self.waypoint.e[0], self.waypoint.n[0]])
             p2 = np.array([self.waypoint.e[1], self.waypoint.n[1]])
-            cmd_vel = pathControler(p1,p2,self.pos,self.vel)
+            cmd_vel = pathController(p1,p2,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
@@ -183,8 +190,8 @@ class Controller():
     ## Process Functions
     def publish(self):
         """ publish waypoints and navigation messages """
-        if self.drone_mode != 'OFFBOARD':
-            return
+        self.cmd_pos.z -= self.u_offset
+
         self.cmd.header.stamp = rospy.get_rostime() 
         self.cmd.position = self.cmd_pos
         self.cmd.velocity = self.cmd_vel
