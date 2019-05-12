@@ -7,6 +7,7 @@ Beacon Localization Script for Autonomous Mission
 import numpy as np
 import numpy.linalg as npl
 import scipy.stats as sps
+from scipy.stats import norm
 import rospy
 
 from aa241x_mission.msg import SensorMeasurement, PersonEstimate, MissionState
@@ -18,6 +19,18 @@ CERTAINTY_THRESHOLD = 0.90    # publish localized beacon once we're 90% sure of 
 POS_DESIRED = 1               # position accuracy corresponding to certainty threshold
 Z_THRESH = sps.norm.ppf((1+CERTAINTY_THRESHOLD)/2)  # convert certainty to sigma (95%->~2 sigma)
 
+def cal_reliability(sigma, desired):
+    num = 10000
+    dx = 2/num
+    px = 0
+    for i in range(num):
+        x1 = - desired + 2 * desired * i /num
+        x2 = math.sqrt(desired ** 2 - x1 ** 2)
+        p_x2 = norm.cdf(x2, 0, sigma) - norm.cdf(-x2, 0, sigma)
+        p_x1 = norm(0, sigma).pdf(x1)
+        px += p_x1 * p_x2 * dx
+
+    return px
 
 def getUncertainty(h):
     sigma = 2 + h/50.
@@ -108,7 +121,7 @@ class BeaconLocalization():
             self.person_pub.publish(msg)
 
             # publish to localized_beacons
-            if sigma/POS_DESIRED <= Z_THRESH:
+            if cal_reliability(sigma, POS_DESIRED) >= CERTAINTY_THRESHOLD:
                 lbeac.ids.append(beacon_id)
                 lbeac.n.append(pos[0])
                 lbeac.e.append(pos[1])
