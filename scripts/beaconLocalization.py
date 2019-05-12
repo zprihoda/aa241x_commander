@@ -108,7 +108,7 @@ class BeaconLocalization():
             self.person_pub.publish(msg)
 
             # publish to localized_beacons
-            if sigma/POS_DESIRED <= Z_THRESH:
+            if POS_DESIRED/sigma >= Z_THRESH:
                 lbeac.ids.append(beacon_id)
                 lbeac.n.append(pos[0])
                 lbeac.e.append(pos[1])
