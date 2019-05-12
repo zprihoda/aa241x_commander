@@ -21,7 +21,7 @@ V_MAX = 5.0     # in m/s
 
 def pointController(p_des,p_cur,v_cur):
     kp = 1.0
-    kd = 0.1
+    kd = 0.5
     delta_p = p_des-p_cur
     v_cmd = kp*delta_p - kd*v_cur
 
@@ -31,36 +31,29 @@ def pointController(p_des,p_cur,v_cur):
     return v_cmd
 
 def pathController(p1,p2,p_cur,v_cur):
-    direction_vector = np.array([p2[0]-p1[0], p2[1]-p1[1], 0.0])
-    direction = direction_vector / np.linalg.norm(direction_vector)
-    if direction[2] == 0:
-        coeff_c = 0
+    n_par = (p2-p1)/npl.norm(p2-p1)     # parallel vector
+    p_line = p1 + np.dot(p_cur,n_par)   # project current position onto line
+    
+    if np.all(p_line == p_cur): # exactly on line
+        n_perp = np.array([0,0])
+        r_perp = np.array([0,0])
     else:
-        coeff_c = 1
-    coeff_a = 1
-    coeff_b = -(direction_vector[0] + direction_vector[2]) / direction_vector[1]
-    coeff_d = - coeff_a*p1[0] - coeff_b*p1[1]
+        r_perp = p_line-p_cur
+        n_perp = r_perp/npl.norm(r_perp)  # perpendicular unit vector
 
-    error = - (coeff_a*p_cur[0] + coeff_b*p_cur[1] + coeff_d) / np.sqrt(coeff_a**2 + coeff_b**2 + coeff_c**2)
-    normal_vector = np.array([coeff_a, coeff_b, coeff_c])
-    normal_vector = normal_vector / np.sqrt(coeff_a**2 + coeff_b**2 + coeff_c**2)
-    direction_vector = direction
+    rdot_perp = np.dot(v_cur,n_perp)
 
-    normal_vector = normal_vector[0:-1]     # convert to 2d
-    direction_vector = direction_vector[0:-1]
-    velocity = v_cur
-    error_dot = np.inner(velocity, normal_vector)
-
-    k_e = 1
-    k_e_dot = 0.5
+    k_p = 1
+    k_d = 0.5
+    v_perp = k_p*r_perp + k_d*rdot_perp
+    
+    v_par = V_MAX
+    
     g = 1.0     # v_cmd = g*v_par + v_perp
+    v_cmd = g*v_par + v_perp
+    v_cmd = v_cmd/npl.norm(v_cmd)
 
-    normal_output = k_e * error + k_e_dot * error_dot
-    direction_output = V_MAX
-
-    output = g*direction_vector*direction_output + normal_vector*normal_output
-    output = output/npl.norm(output) * V_MAX
-    return output
+    return v_cmd
 
 
 class Controller():
