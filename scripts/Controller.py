@@ -52,8 +52,8 @@ def pathController(p1,p2,p_cur,v_cur):
     error_dot = np.inner(velocity, normal_vector)
 
     k_e = 1
-    k_e_dot = 0.1
-    g = 0.1     # v_cmd = g*v_par + v_perp
+    k_e_dot = 0.5
+    g = 1.0     # v_cmd = g*v_par + v_perp
 
     normal_output = k_e * error + k_e_dot * error_dot
     direction_output = V_MAX
@@ -85,9 +85,9 @@ class Controller():
         self.cmd.type_mask = 2499   # command Vx,Vy,Pz
         self.cmd.yaw = 0
         self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED    # use the local frame
-        PT = PositionTarget
-        self.cmd.type_mask = (PT.IGNORE_VX | PT.IGNORE_VY | PT.IGNORE_VZ | PT.IGNORE_AFX |
-            PT.IGNORE_AFY | PT.IGNORE_AFZ | PT.IGNORE_YAW_RATE);
+        # PT = PositionTarget
+        # self.cmd.type_mask = (PT.IGNORE_PX | PT.IGNORE_PY | PT.IGNORE_VZ | PT.IGNORE_AFX |
+        #     PT.IGNORE_AFY | PT.IGNORE_AFZ | PT.IGNORE_YAW_RATE);
 
 
         self.cmd_pos = Point()  # NOTE: this is defined in ENU
@@ -170,18 +170,19 @@ class Controller():
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.LOCALIZATION:
-            p = np.array([self.waypoint.e,self.waypoint.n])
+            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.HOME:
-            p = np.array([self.waypoint.e,self.waypoint.n])
+            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
         elif self.mode == Mode.LANDING:
+            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]

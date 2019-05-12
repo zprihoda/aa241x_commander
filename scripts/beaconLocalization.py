@@ -59,7 +59,7 @@ class BeaconLocalization():
 
             # Update/Store Estimates
             if id_num in self.beacon_locations.keys():
-                self.beacon_locations[id_num] = updateBeaconLocation(id_num,np.array([n,e]),sigma)
+                self.beacon_locations[id_num] = self.updateBeaconLocation(id_num,np.array([n,e]),sigma)
             else:
                 self.beacon_locations[id_num] = [np.array([n,e]), sigma]
 
@@ -79,7 +79,7 @@ class BeaconLocalization():
         r_k = np.identity(2) * (sigma) ** 2
 
         prior_mean,prior_sigma = self.beacon_locations[id_num]
-        prior_covariance = np.identity(2) * post_sigma**2
+        prior_cov = np.identity(2) * prior_sigma**2
         sigma = np.identity(2)*sigma
 
         K = np.matmul(prior_cov, np.linalg.inv(r_k + prior_cov))

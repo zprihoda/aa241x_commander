@@ -85,12 +85,12 @@ class Navigator():
     def beaconCallback(self,msg):
         meas_ids = msg.id
         for i in range(len(meas_ids)):
-            if meas_ids[i] in localized_beacons:
+            if meas_ids[i] in self.localized_beacons:
                 continue
-            elif meas_ids[i] in unlocalized_beacons.keys():
+            elif meas_ids[i] in self.unlocalized_beacons.keys():
                 continue
             else:
-                unlocalized_beacons[meas_ids[i]] = np.array([msg.n[i],msg.e[i]])
+                self.unlocalized_beacons[meas_ids[i]] = np.array([msg.n[i],msg.e[i]])
 
     def missionStateCallback(self,msg):
         self.e_offset = msg.e_offset
@@ -138,15 +138,15 @@ class Navigator():
                     self.search_wp_idx += 1
 
         elif self.mode == Mode.LOCALIZATION:
-            if len(unlocalized_beacons.keys()) == 0:
+            if len(self.unlocalized_beacons.keys()) == 0:
                 self.loc_done = True
             else:
                 self.loc_done = False
-                beacon_id = sort(unlocalized_beacons.keys())[0]
-                beacon_pos = unlocalized_beacons[beacon_id]
+                beacon_id = sorted(self.unlocalized_beacons.keys())[0]
+                beacon_pos = self.unlocalized_beacons[beacon_id]
                 self.waypoint_e = [beacon_pos[0]]
                 self.waypoint_n = [beacon_pos[1]]
-                self.waypoint_alt = LOCALIZE_ALT
+                self.waypoint_alt = [LOCALIZE_ALT]
 
         elif self.mode == Mode.HOME:
             self.waypoint_e = [self.home_pos[0]]
