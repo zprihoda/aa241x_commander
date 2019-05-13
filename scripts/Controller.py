@@ -31,27 +31,48 @@ def pointController(p_des,p_cur,v_cur):
     return v_cmd
 
 def pathController(p1,p2,p_cur,v_cur):
-    n_par = (p2-p1)/npl.norm(p2-p1)     # parallel vector
-    p_line = p1 + np.dot(p_cur,n_par)   # project current position onto line
+    # n_par = (p2-p1)/npl.norm(p2-p1)     # parallel vector
+    # m = (p2[1]-p1[1])/(p2[0]-p1[0])
+    # b = p1[1]-m*p1[0]
+    # p_line = np.array([0,b]) + np.dot(p_cur,n_par)   # project current position onto line
     
-    if np.all(p_line == p_cur): # exactly on line
-        n_perp = np.array([0,0])
-        r_perp = np.array([0,0])
-    else:
-        r_perp = p_line-p_cur
-        n_perp = r_perp/npl.norm(r_perp)  # perpendicular unit vector
+    # if np.all(p_line == p_cur): # exactly on line
+    #     n_perp = np.array([0,0])
+    #     r_perp = np.array([0,0])
+    # else:
+    #     r_perp = p_line-p_cur
+    #     n_perp = r_perp/npl.norm(r_perp)  # perpendicular unit vector
+    # rdot_perp = np.dot(v_cur,n_perp)
 
-    rdot_perp = np.dot(v_cur,n_perp)
+    if np.linalg.norm(p1 - p2) == 0:
+        p1 = p_cur
+    direction_vector = (p2 - p1)/np.linalg.norm(p2 - p1)
+
+    if direction_vector[1] == 0:
+        coeff_a = 0
+        coeff_b = 1
+    else:
+        coeff_a = 1
+        coeff_b = - direction_vector[0] * coeff_a / direction_vector[1]
+
+    coeff_c = - coeff_a * p1[0] - coeff_b * p1[1]
+    error = -(coeff_a * p_cur[0] + coeff_b * p_cur[1] + coeff_c) / np.sqrt(coeff_a **2 + coeff_b **2)
+    normal_vector = np.array([coeff_a, coeff_b])
+    normal_vector = normal_vector/npl.norm(normal_vector)
+    
+    r_perp = error
+    rdot_perp = np.inner(v_cur, normal_vector)
+    n_par = direction_vector
+    n_perp = normal_vector
 
     k_p = 1
     k_d = 0.5
-    v_perp = k_p*r_perp + k_d*rdot_perp
-    
-    v_par = V_MAX
+    v_perp = (k_p*r_perp + k_d*rdot_perp) * n_perp
+    v_par = V_MAX*n_par
     
     g = 1.0     # v_cmd = g*v_par + v_perp
     v_cmd = g*v_par + v_perp
-    v_cmd = v_cmd/npl.norm(v_cmd)
+    v_cmd = v_cmd/npl.norm(v_cmd) * V_MAX
 
     return v_cmd
 

@@ -21,7 +21,7 @@ from aa241x_commander.msg import LocalizedBeacons
 # Global Variables
 TAKEOFF_ALT_THRESHOLD = 30          # Altitude at which we have finished take-off
 RETURN_BATTERY_THRESHOLD = 0.20     # battery threshold for returning home
-HOME_POS_THRESH = 1.0               # Position error Threshold for determining once we're home
+HOME_POS_THRESH = 5.0               # Position error Threshold for determining once we're home
 IDLE_TIME = 5.0                     # sit in idle for this long before taking off
 MAX_BATTERY_CHARGE = 4400.          # Maximum battery charge in Mah
 TARGET_NUM_NODES = 5
@@ -148,8 +148,8 @@ class ModeController():
 
     def hasReturnedHome(self):
         pos = self.pos
-        cur_pos = np.array([pos.x,pos.y,pos.z])
-        return npl.norm([self.home_pos-cur_pos]) <= HOME_POS_THRESH
+        cur_pos = np.array([pos.x,pos.y])
+        return npl.norm([self.home_pos[0:2]-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
         # TODO: How do we determine if we've landed
@@ -177,8 +177,8 @@ class ModeController():
                 self.mode = Mode.SEARCH
 
         elif self.mode == Mode.SEARCH:
-            if self.newBeaconDetected():
-                self.mode = Mode.LOCALIZATION
+            # if self.newBeaconDetected():
+                # self.mode = Mode.LOCALIZATION
             if self.searchFinished():
                 self.mode = Mode.HOME
 

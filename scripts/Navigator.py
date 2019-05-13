@@ -21,7 +21,7 @@ from aa241x_mission.msg import MissionState
 
 SEARCH_ALT = 50 # desired altitude for performing search mode
 LOCALIZE_ALT = 30   # desired altitude for performing localization
-PATH_THRESH = 1     # move to next path once within 5 meters of end point (smooths out path)
+PATH_THRESH = 5     # move to next path once within 5 meters of end point (smooths out path)
 
 class Navigator():
     def __init__(self):
@@ -156,7 +156,7 @@ class Navigator():
         elif self.mode == Mode.LANDING:
             self.waypoint_e = [self.home_pos[0]]
             self.waypoint_n = [self.home_pos[1]]
-            self.waypoint_alt = []
+            self.waypoint_alt = [0]
 
 
     ## Process Functions

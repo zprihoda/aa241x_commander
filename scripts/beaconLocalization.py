@@ -7,7 +7,6 @@ Beacon Localization Script for Autonomous Mission
 import numpy as np
 import numpy.linalg as npl
 import scipy.stats as sps
-from scipy.stats import norm
 import rospy
 
 from aa241x_mission.msg import SensorMeasurement, PersonEstimate, MissionState
@@ -25,9 +24,9 @@ def cal_reliability(sigma, desired):
     px = 0
     for i in range(num):
         x1 = - desired + 2 * desired * i /num
-        x2 = math.sqrt(desired ** 2 - x1 ** 2)
-        p_x2 = norm.cdf(x2, 0, sigma) - norm.cdf(-x2, 0, sigma)
-        p_x1 = norm(0, sigma).pdf(x1)
+        x2 = np.sqrt(desired ** 2 - x1 ** 2)
+        p_x2 = sps.norm.cdf(x2, 0, sigma) - sps.norm.cdf(-x2, 0, sigma)
+        p_x1 = sps.norm(0, sigma).pdf(x1)
         px += p_x1 * p_x2 * dx
 
     return px
