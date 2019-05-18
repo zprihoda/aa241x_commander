@@ -123,19 +123,19 @@ class Navigator():
                 wp = np.array(search_path[self.search_wp_idx])
                 pos = np.array([self.pos.x, self.pos.y])
 
-                if self.search_wp_idx == 0:     # set waypoint as a single point
-                    self.waypoint_e = [self.home_pos[0],wp[0]]
-                    self.waypoint_n = [self.home_pos[1],wp[1]]
-                    self.waypoint_alt = [SEARCH_ALT]
-                else:   # set waypoint as a path
-                    wp = np.array(search_path[self.search_wp_idx])
-                    wp_prev = np.array(search_path[self.search_wp_idx-1])
-                    self.waypoint_e = [wp_prev[0],wp[0]]
-                    self.waypoint_n = [wp_prev[1],wp[1]]
-                    self.waypoint_alt = [SEARCH_ALT,SEARCH_ALT]
-
                 if npl.norm(wp-pos) < PATH_THRESH:
                     self.search_wp_idx += 1
+
+                # obtain previous waypoint
+                if self.search_wp_idx == 0:
+                    wp_prev = self.home_pos
+                else:
+                    wp_prev = np.array(search_path[self.search_wp_idx-1])
+
+                # Form path
+                self.waypoint_e = [wp_prev[0],wp[0]]
+                self.waypoint_n = [wp_prev[1],wp[1]]
+                self.waypoint_alt = [SEARCH_ALT,SEARCH_ALT]
 
         elif self.mode == Mode.LOCALIZATION:
             if len(self.unlocalized_beacons.keys()) == 0:
