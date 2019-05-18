@@ -74,7 +74,6 @@ class ModeController():
 
     ## Callbacks
     def stateCallback(self,msg):
-        self.current_state = msg
         self.drone_mode = msg.mode
 
     def poseCallback(self,msg):
@@ -83,8 +82,10 @@ class ModeController():
         y = pos.y + self.n_offset
         z = pos.z + self.u_offset
         if self.home_pos is None and self.e_offset != 0:
-            self.home_pos = np.array([x,y,z])
-        self.pose_header = msg.header
+            self.home_pos = Pose()
+            self.home_pos.x = x
+            self.home_pos.y = y
+            self.home_pos.z = z
         self.pos = msg.pose.position
         self.pos.x = x
         self.pos.y = y
@@ -137,7 +138,6 @@ class ModeController():
         return self.loc_done
 
     def searchFinished(self):
-        # TODO: where are we getting nodes_localized (should be published by beaconLocalization script)
         return len(self.beacons_localized) >= TARGET_NUM_NODES or self.search_done
 
     def batteryLow(self):
@@ -147,9 +147,9 @@ class ModeController():
         return False
 
     def hasReturnedHome(self):
-        pos = self.pos
-        cur_pos = np.array([pos.x,pos.y])
-        return npl.norm([self.home_pos[0:2]-cur_pos]) <= HOME_POS_THRESH
+        cur_pos = np.array([self.pos.x,self.pos.y])
+        home_pos = np.array([self.home_pos.x,self.home_pos.y])
+        return npl.norm([home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
         # TODO: How do we determine if we've landed
@@ -204,11 +204,7 @@ class ModeController():
         self.mode_publisher.publish(msg)
 
         if self.home_pos is not None:
-            msg = Pose()
-            msg.position.x = self.home_pos[0]
-            msg.position.y = self.home_pos[1]
-            msg.position.z = self.home_pos[2]
-            self.home_publisher.publish(msg)
+            self.home_publisher.publish(self.home_pose)
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
