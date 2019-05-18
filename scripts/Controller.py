@@ -31,18 +31,6 @@ def pointController(p_des,p_cur,v_cur):
     return v_cmd
 
 def pathController(p1,p2,p_cur,v_cur):
-    # n_par = (p2-p1)/npl.norm(p2-p1)     # parallel vector
-    # m = (p2[1]-p1[1])/(p2[0]-p1[0])
-    # b = p1[1]-m*p1[0]
-    # p_line = np.array([0,b]) + np.dot(p_cur,n_par)   # project current position onto line
-    
-    # if np.all(p_line == p_cur): # exactly on line
-    #     n_perp = np.array([0,0])
-    #     r_perp = np.array([0,0])
-    # else:
-    #     r_perp = p_line-p_cur
-    #     n_perp = r_perp/npl.norm(r_perp)  # perpendicular unit vector
-    # rdot_perp = np.dot(v_cur,n_perp)
 
     if np.linalg.norm(p1 - p2) == 0:
         p1 = p_cur
@@ -59,7 +47,7 @@ def pathController(p1,p2,p_cur,v_cur):
     error = -(coeff_a * p_cur[0] + coeff_b * p_cur[1] + coeff_c) / np.sqrt(coeff_a **2 + coeff_b **2)
     normal_vector = np.array([coeff_a, coeff_b])
     normal_vector = normal_vector/npl.norm(normal_vector)
-    
+
     r_perp = error
     rdot_perp = np.inner(v_cur, normal_vector)
     n_par = direction_vector
@@ -69,7 +57,7 @@ def pathController(p1,p2,p_cur,v_cur):
     k_d = 0.5
     v_perp = (k_p*r_perp + k_d*rdot_perp) * n_perp
     v_par = V_MAX*n_par
-    
+
     g = 1.0     # v_cmd = g*v_par + v_perp
     v_cmd = g*v_par + v_perp
     v_cmd = v_cmd/npl.norm(v_cmd) * V_MAX
@@ -98,11 +86,6 @@ class Controller():
         self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED
         self.cmd.type_mask = 2499   # command Vx,Vy,Pz
         self.cmd.yaw = 0
-        self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED    # use the local frame
-        # PT = PositionTarget
-        # self.cmd.type_mask = (PT.IGNORE_PX | PT.IGNORE_PY | PT.IGNORE_VZ | PT.IGNORE_AFX |
-        #     PT.IGNORE_AFY | PT.IGNORE_AFZ | PT.IGNORE_YAW_RATE);
-
 
         self.cmd_pos = Point()  # NOTE: this is defined in ENU
         self.cmd_pos.x = 0  # E
@@ -123,14 +106,9 @@ class Controller():
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/local_position/velocity_local', TwistStamped, self.velCallback)
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
-        rospy.Subscriber('/mavros/state', State, self.stateCallback)
 
 
     ## Callbacks
-    def stateCallback(self,msg):
-        self.current_state = msg
-        self.drone_mode = msg.mode
-
     def modeCallback(self,msg):
         self.mode = Mode(msg.data)
 
@@ -159,21 +137,21 @@ class Controller():
 
     ## Main Loop for Navigator
     def controlLoop(self):
-        if self.waypoint is None or len(self.waypoint.n) < 1:
-            self.cmd_pos.z = 0
-            return
 
-        # Specialized Controllers
-        if self.mode == Mode.IDLE:  # do nothing
-            self.cmd_vel.x = 0
-            self.cmd_vel.y = 0
-            self.cmd_pos.z = self.prev_alt
-        elif self.mode == Mode.TAKEOFF:
+        # default behavior (0 xy velocity, maintain altitude)
+        self.cmd_vel.x = 0
+        self.cmd_vel.y = 0
+        self.cmd_pos.z = self.prev_alt
+
+        # Go to Point
+        if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
+
+        # Follow path
         elif self.mode == Mode.SEARCH:
             if len(self.waypoint.e) < 2:    # wait until Navigator updates
                 return
@@ -183,18 +161,8 @@ class Controller():
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_pos.z = self.waypoint.alt[-1]
-        elif self.mode == Mode.LOCALIZATION:
-            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
-            cmd_vel = pointController(p,self.pos,self.vel)
-            self.cmd_vel.x = cmd_vel[0]
-            self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt[-1]
-        elif self.mode == Mode.HOME:
-            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
-            cmd_vel = pointController(p,self.pos,self.vel)
-            self.cmd_vel.x = cmd_vel[0]
-            self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt[-1]
+
+        # Landing Controller
         elif self.mode == Mode.LANDING:
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
@@ -207,7 +175,7 @@ class Controller():
         """ publish waypoints and navigation messages """
         self.cmd_pos.z -= self.u_offset
 
-        self.cmd.header.stamp = rospy.get_rostime() 
+        self.cmd.header.stamp = rospy.get_rostime()
         self.cmd.position = self.cmd_pos
         self.cmd.velocity = self.cmd_vel
         self.cmd_pub.publish(self.cmd)
