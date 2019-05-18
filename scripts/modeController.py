@@ -138,7 +138,7 @@ class ModeController():
         return self.loc_done
 
     def searchFinished(self):
-        return len(self.beacons_localized) >= TARGET_NUM_NODES or self.search_done
+        return self.search_done
 
     def batteryLow(self):
         # TODO: Implement a distance dependent cutoff

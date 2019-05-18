@@ -28,7 +28,6 @@ def cal_reliability(sigma, desired):
         p_x2 = sps.norm.cdf(x2, 0, sigma) - sps.norm.cdf(-x2, 0, sigma)
         p_x1 = sps.norm(0, sigma).pdf(x1)
         px += p_x1 * p_x2 * dx
-
     return px
 
 def getUncertainty(h):
