@@ -144,7 +144,9 @@ class Controller():
         self.cmd_pos.z = self.prev_alt
 
         # Go to Point
-        if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]
+        if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]:
+            if len(self.waypoint.e) != 1:    # wait until Navigator updates
+                return
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             cmd_vel = pointController(p,self.pos,self.vel)
             self.cmd_vel.x = cmd_vel[0]
@@ -153,7 +155,7 @@ class Controller():
 
         # Follow path
         elif self.mode == Mode.SEARCH:
-            if len(self.waypoint.e) < 2:    # wait until Navigator updates
+            if len(self.waypoint.e) != 2:    # wait until Navigator updates
                 return
             p1 = np.array([self.waypoint.e[0], self.waypoint.n[0]])
             p2 = np.array([self.waypoint.e[1], self.waypoint.n[1]])

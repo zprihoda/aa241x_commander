@@ -83,9 +83,9 @@ class ModeController():
         z = pos.z + self.u_offset
         if self.home_pos is None and self.e_offset != 0:
             self.home_pos = Pose()
-            self.home_pos.x = x
-            self.home_pos.y = y
-            self.home_pos.z = z
+            self.home_pos.position.x = x
+            self.home_pos.position.y = y
+            self.home_pos.position.z = z
         self.pos = msg.pose.position
         self.pos.x = x
         self.pos.y = y
@@ -204,7 +204,7 @@ class ModeController():
         self.mode_publisher.publish(msg)
 
         if self.home_pos is not None:
-            self.home_publisher.publish(self.home_pose)
+            self.home_publisher.publish(self.home_pos)
 
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
