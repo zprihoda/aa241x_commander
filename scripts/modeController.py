@@ -148,7 +148,7 @@ class ModeController():
 
     def hasReturnedHome(self):
         cur_pos = np.array([self.pos.x,self.pos.y])
-        home_pos = np.array([self.home_pos.x,self.home_pos.y])
+        home_pos = np.array([self.home_pos.position.x,self.home_pos.position.y])
         return npl.norm([home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
@@ -177,12 +177,13 @@ class ModeController():
                 self.mode = Mode.SEARCH
 
         elif self.mode == Mode.SEARCH:
-            # if self.newBeaconDetected():
-                # self.mode = Mode.LOCALIZATION
+            if self.newBeaconDetected():
+                self.mode = Mode.LOCALIZATION
             if self.searchFinished():
                 self.mode = Mode.HOME
 
         elif self.mode == Mode.LOCALIZATION:
+            self.new_beacon_detected = False
             if self.localizationFinished():
                 self.mode = Mode.SEARCH
 
