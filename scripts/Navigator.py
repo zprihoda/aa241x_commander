@@ -90,7 +90,7 @@ class Navigator():
             elif meas_ids[i] in self.unlocalized_beacons.keys():
                 continue
             else:
-                self.unlocalized_beacons[meas_ids[i]] = np.array([msg.n[i],msg.e[i]])
+                self.unlocalized_beacons[meas_ids[i]] = np.array([msg.e[i],msg.n[i]])
 
     def missionStateCallback(self,msg):
         self.e_offset = msg.e_offset
