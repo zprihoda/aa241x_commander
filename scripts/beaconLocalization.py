@@ -18,17 +18,9 @@ CERTAINTY_THRESHOLD = 0.90    # publish localized beacon once we're 90% sure of 
 POS_DESIRED = 1               # position accuracy corresponding to certainty threshold
 
 
-def cal_reliability(sigma, desired):
-    num = 10000
-    dx = 2/num
-    px = 0
-    for i in range(num):
-        x1 = - desired + 2 * desired * i /num
-        x2 = np.sqrt(desired ** 2 - x1 ** 2)
-        p_x2 = sps.norm.cdf(x2, 0, sigma) - sps.norm.cdf(-x2, 0, sigma)
-        p_x1 = sps.norm(0, sigma).pdf(x1)
-        px += p_x1 * p_x2 * dx
-    return px
+def calcReliability(std):
+    pass_rate = sps.chi2.cdf(POS_DESIRED/std**2,2,loc=0,scale=1)
+    return pass_rate
 
 def getUncertainty(h):
     sigma = 2 + h/50.
@@ -37,24 +29,25 @@ def getUncertainty(h):
 
 class BeaconLocalization():
 
-    def __init__(self):
+    def __init__(self,debug=False):
         self.beacon_locations = {}      # stores beacon position and uncertainty {id : [(x,y),sigma]}
         self.h = None
         self.e_offset = 0
         self.n_offset = 0
         self.u_offset = 0
 
-        ## Init Node
-        rospy.init_node('BeaconLocalizer', anonymous=True)
+        if not debug:
+            ## Init Node
+            rospy.init_node('BeaconLocalizer', anonymous=True)
 
-        # Subscribers
-        rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
-        rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
-        rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
+            # Subscribers
+            rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
+            rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
+            rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
-        # Publishers
-        self.lbeac_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
-        self.person_pub = rospy.Publisher('/person_found',PersonEstimate,queue_size=10)
+            # Publishers
+            self.lbeac_pub = rospy.Publisher('/localizer/localized_beacons', LocalizedBeacons, queue_size=10)
+            self.person_pub = rospy.Publisher('/person_found',PersonEstimate,queue_size=10)
 
     def beaconCallback(self,msg):
         sigma = getUncertainty(self.h)
@@ -119,7 +112,7 @@ class BeaconLocalization():
             self.person_pub.publish(msg)
 
             # publish to localized_beacons
-            if cal_reliability(sigma, POS_DESIRED) >= CERTAINTY_THRESHOLD:
+            if calcReliability(sigma) >= CERTAINTY_THRESHOLD:
                 lbeac.ids.append(beacon_id)
                 lbeac.n.append(pos[0])
                 lbeac.e.append(pos[1])
