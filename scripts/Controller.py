@@ -3,7 +3,6 @@
 """
 Controller Script for Autonomous Mission
 TODO: implement landing controller
-TODO: Implement yaw (May not be worth the effort?)
 """
 
 import rospy
