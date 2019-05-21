@@ -3,7 +3,6 @@
 """
 Controller Script for Autonomous Mission
 TODO: implement landing controller
-TODO: Implement altitude controller (with velocity)
 TODO: Implement yaw (May not be worth the effort?)
 """
 
@@ -21,6 +20,10 @@ from aa241x_commander.msg import Waypoint
 
 
 V_MAX = 5.0     # in m/s
+VEL_CONTROL_MASK = (PositionTarget.IGNORE_PX | PositionTarget.IGNORE_PY | PositionTarget.IGNORE_PZ |
+                    PositionTarget.IGNORE_AFX | PositionTarget.IGNORE_AFY | PositionTarget.IGNORE_AFZ |
+                    PositionTarget.IGNORE_YAW_RATE);
+
 
 def pointController(p_des,p_cur,v_cur):
     kp = 1.0
@@ -80,6 +83,7 @@ class Controller():
         self.mode = None
         self.pos = None     # current drone position
         self.vel = None
+        self.vel_alt = None
         self.prev_alt = 0   # if no altitude given, maintain previous
         self.waypoint = None
         self.drone_mode = None
@@ -91,13 +95,8 @@ class Controller():
         # setup cmd object
         self.cmd = PositionTarget()
         self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED
-        self.cmd.type_mask = 2499   # command Vx,Vy,Pz
+        self.cmd.type_mask = VEL_CONTROL_MASK   # command Vx,Vy,Vz,Yaw
         self.cmd.yaw = 0
-
-        self.cmd_pos = Point()  # NOTE: this is defined in ENU
-        self.cmd_pos.x = 0  # E
-        self.cmd_pos.y = 0  # N
-        self.cmd_pos.z = 0  # U
 
         self.cmd_vel = Vector3() # NOTE: this is defined in ENU
         self.cmd_vel.x = 0  # E
@@ -127,6 +126,7 @@ class Controller():
     def velCallback(self,msg):
         vel = msg.twist.linear
         self.vel = np.array([vel.y,vel.x])
+        self.vel_alt = vel.z 
 
     def waypointCallback(self,msg):
         if len(msg.alt) > 0:
@@ -148,17 +148,21 @@ class Controller():
         # default behavior (0 xy velocity, maintain altitude)
         self.cmd_vel.x = 0
         self.cmd_vel.y = 0
-        self.cmd_pos.z = self.prev_alt
+        self.cmd_vel.z = 0
 
         # Go to Point
         if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]:
             if len(self.waypoint.e) != 1:    # wait until Navigator updates
                 return
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
+            des_alt = self.waypoint.alt[-1]
+
             cmd_vel = pointController(p,self.pos,self.vel)
+            cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
+
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt[-1]
+            self.cmd_vel.z = cmd_vel_alt
 
         # Follow path
         elif self.mode == Mode.SEARCH:
@@ -166,26 +170,31 @@ class Controller():
                 return
             p1 = np.array([self.waypoint.e[0], self.waypoint.n[0]])
             p2 = np.array([self.waypoint.e[1], self.waypoint.n[1]])
+            des_alt = self.waypoint.alt[-1]
+
             cmd_vel = pathController(p1,p2,self.pos,self.vel)
+            cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
+
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = self.waypoint.alt[-1]
+            self.cmd_vel.z = cmd_vel_alt
 
         # Landing Controller
         elif self.mode == Mode.LANDING:
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
+            des_alt = self.waypoint.alt[-1]
+
             cmd_vel = pointController(p,self.pos,self.vel)
+            cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
+
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_pos.z = 0
+            self.cmd_vel.z = cmd_vel_alt
 
     ## Process Functions
     def publish(self):
         """ publish waypoints and navigation messages """
-        self.cmd_pos.z -= self.u_offset
-
         self.cmd.header.stamp = rospy.get_rostime()
-        self.cmd.position = self.cmd_pos
         self.cmd.velocity = self.cmd_vel
         self.cmd_pub.publish(self.cmd)
 
