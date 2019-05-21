@@ -2,7 +2,6 @@
 
 """
 Beacon Localization Script for Autonomous Mission
-TODO: Only publish to person found once per beacon (so once we have finished localization for that beacon)
 """
 
 import numpy as np
@@ -104,20 +103,21 @@ class BeaconLocalization():
         for beacon_id in self.beacon_locations.keys():
             pos,sigma = self.beacon_locations[beacon_id]
 
-            # Publish to person estimate
-            msg = PersonEstimate()
-            msg.header.stamp = rospy.Time.now()
-            msg.id = beacon_id
-            msg.n = pos[0]
-            msg.e = pos[1]
-            self.person_pub.publish(msg)
-
             # publish to localized_beacons
             if calcReliability(sigma) >= CERTAINTY_THRESHOLD:
                 lbeac.ids.append(beacon_id)
                 lbeac.n.append(pos[0])
                 lbeac.e.append(pos[1])
                 lbeac.sigma.append(sigma)
+
+                # Publish to person estimate once we are 90% positive
+                msg = PersonEstimate()
+                msg.header.stamp = rospy.Time.now()
+                msg.id = beacon_id
+                msg.n = pos[0]
+                msg.e = pos[1]
+                self.person_pub.publish(msg)
+
         lbeac.num_beacons = len(lbeac.ids)
         self.lbeac_pub.publish(lbeac)
 
