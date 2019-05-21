@@ -145,7 +145,7 @@ class Controller():
     ## Main Loop for Navigator
     def controlLoop(self):
 
-        # default behavior (0 xy velocity, maintain altitude)
+        # default behavior (0 xyz velocity)
         self.cmd_vel.x = 0
         self.cmd_vel.y = 0
         self.cmd_vel.z = 0
