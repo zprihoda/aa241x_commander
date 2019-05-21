@@ -3,7 +3,6 @@
 """
 Controller Script for Autonomous Mission
 TODO: implement landing controller
-TODO: implement a direction into path controller (so we don't miss anything)
 TODO: Implement altitude controller (with velocity)
 TODO: Implement yaw (May not be worth the effort?)
 """
@@ -61,6 +60,10 @@ def pathController(p1,p2,p_cur,v_cur):
     k_d = 0.5
     v_perp = (k_p*r_perp + k_d*rdot_perp) * n_perp
     v_par = V_MAX*n_par
+
+    # if we are past p2 along path, reverse direction
+    if np.dot(p2-p_cur,direction) < 0 :
+        v_par *= -1
 
     g = 1.0     # v_cmd = g*v_par + v_perp
     v_cmd = g*v_par + v_perp
