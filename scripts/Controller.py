@@ -71,8 +71,9 @@ def pathController(p1,p2,p_cur,v_cur):
     g = 1.0     # v_cmd = g*v_par + v_perp
     v_cmd = g*v_par + v_perp
     v_cmd = v_cmd/npl.norm(v_cmd) * V_MAX
+    yaw_cmd = np.arctan2(v_cmd[1],v_cmd[0])
 
-    return v_cmd
+    return v_cmd, yaw_cmd
 
 
 class Controller():
@@ -149,6 +150,7 @@ class Controller():
         self.cmd_vel.x = 0
         self.cmd_vel.y = 0
         self.cmd_vel.z = 0
+        self.cmd.yaw = 0
 
         # Go to Point
         if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]:
@@ -172,30 +174,34 @@ class Controller():
             p2 = np.array([self.waypoint.e[1], self.waypoint.n[1]])
             des_alt = self.waypoint.alt[-1]
 
-            cmd_vel = pathController(p1,p2,self.pos,self.vel)
+            cmd_vel, cmd_yaw = pathController(p1,p2,self.pos,self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
 
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = cmd_vel_alt
+            self.cmd_yaw = cmd_yaw
 
         # Landing Controller
         elif self.mode == Mode.LANDING:
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             des_alt = self.waypoint.alt[-1]
 
-            cmd_vel = pointController(p,self.pos,self.vel)
+            cmd_vel, cmd_yaw = pointController(p,self.pos,self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
 
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = cmd_vel_alt
+            self.cmd_yaw = cmd_yaw
+
 
     ## Process Functions
     def publish(self):
         """ publish waypoints and navigation messages """
         self.cmd.header.stamp = rospy.get_rostime()
         self.cmd.velocity = self.cmd_vel
+        self.cmd.yaw = self.cmd_yaw
         self.cmd_pub.publish(self.cmd)
 
     def run(self):
