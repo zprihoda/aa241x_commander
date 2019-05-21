@@ -3,6 +3,11 @@
 """
 Mode Controller Script for Autonomous Mission
 Handles the FSM and high level mission logic
+
+TODO: Validate takeoff altitude (is correct with offset?)
+TODO: How do we determine if we've landed
+TODO: Implement a distance dependent cutoff
+TODO: We may want to switch off once we've landed (disarm)
 """
 
 import rospy
@@ -128,7 +133,6 @@ class ModeController():
         return check1 and check2 and check3 and check4
 
     def hasTakenOff(self):
-        # TODO: Does z correctly measure altitude? (it might measure some relative pose)
         return self.pos.z > TAKEOFF_ALT_THRESHOLD
 
     def newBeaconDetected(self):
@@ -141,7 +145,6 @@ class ModeController():
         return self.search_done
 
     def batteryLow(self):
-        # TODO: Implement a distance dependent cutoff
         # maybe: if level <= thresh + dist*scaling
         # return self.battery_level <= RETURN_BATTERY_THRESHOLD
         return False
@@ -152,7 +155,6 @@ class ModeController():
         return npl.norm([home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
-        # TODO: How do we determine if we've landed
         return False
 
     ## Main Loop for FSM
@@ -192,7 +194,6 @@ class ModeController():
                 self.mode = Mode.LANDING
 
         elif self.mode == Mode.LANDING:
-            # TODO: We may want to switch off once we've landed (disarm)
             if self.hasLanded():
                 self.mission_complete = True
                 self.mode = Mode.IDLE

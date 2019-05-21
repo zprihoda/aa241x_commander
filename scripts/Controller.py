@@ -2,6 +2,10 @@
 
 """
 Controller Script for Autonomous Mission
+TODO: implement landing controller
+TODO: implement a direction into path controller (so we don't miss anything)
+TODO: Implement altitude controller (with velocity)
+TODO: Implement yaw (May not be worth the effort?)
 """
 
 import rospy

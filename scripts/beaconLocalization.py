@@ -2,6 +2,7 @@
 
 """
 Beacon Localization Script for Autonomous Mission
+TODO: Only publish to person found once per beacon (so once we have finished localization for that beacon)
 """
 
 import numpy as np

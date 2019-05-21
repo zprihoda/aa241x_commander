@@ -3,6 +3,10 @@
 """
 Navigator Script for Autonomous Mission
 Handles pathplanning and setting of waypoints
+
+TODO: Determine the proper way to handle offsets
+TODO: Properly handle landing altitude (may be fixed with above)
+TODO: Clever localization navigation
 """
 
 import rospy
@@ -113,7 +117,6 @@ class Navigator():
             self.waypoint_alt = [40]  # set altitude waypoint above 30
 
         elif self.mode == Mode.SEARCH:
-            # TODO: implement search mode navigation
             if self.search_wp_idx >= len(search_path):
                 self.search_done = True
                 self.waypoint_e = []
