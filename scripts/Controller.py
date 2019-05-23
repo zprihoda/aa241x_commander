@@ -64,7 +64,7 @@ def pathController(p1,p2,p_cur,v_cur):
     v_par = V_MAX*n_par
 
     # if we are past p2 along path, reverse direction
-    if np.dot(p2-p_cur,direction) < 0 :
+    if np.dot(p2-p_cur,direction_vector) < 0 :
         v_par *= -1
 
     g = 1.0     # v_cmd = g*v_par + v_perp
@@ -149,7 +149,7 @@ class Controller():
         self.cmd_vel.x = 0
         self.cmd_vel.y = 0
         self.cmd_vel.z = 0
-        self.cmd.yaw = 0
+        self.cmd_yaw = 0
 
         # Go to Point
         if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]:
