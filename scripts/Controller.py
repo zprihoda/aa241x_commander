@@ -186,7 +186,7 @@ class Controller():
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
             des_alt = self.waypoint.alt[-1]
 
-            cmd_vel, cmd_yaw = pointController(p,self.pos,self.vel)
+            cmd_vel = pointController(p,self.pos,self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
 
             self.cmd_vel.x = cmd_vel[0]
