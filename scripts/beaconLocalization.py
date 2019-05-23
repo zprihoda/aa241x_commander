@@ -84,7 +84,6 @@ class BeaconLocalization():
 
         prior_mean,prior_sigma = self.beacon_locations[id_num]
         prior_cov = np.identity(2) * prior_sigma**2
-        sigma = np.identity(2)*sigma
 
         K = np.matmul(prior_cov, np.linalg.inv(r_k + prior_cov))
         new_mean = prior_mean + np.matmul(K, y_k - prior_mean)
