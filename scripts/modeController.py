@@ -112,7 +112,7 @@ class ModeController():
 
     def batteryCallback(self,msg):
         self.battery_status = msg
-        self.battery_level = msg.charge/MAX_BATTERY_CHARGE  # 1.0 = full, 0.0 = empty
+        self.battery_level = msg.percentage  # 1.0 = full, 0.0 = empty
 
     def localizedBeaconCallback(self,msg):
         self.beacons_localized = msg.ids
@@ -146,8 +146,7 @@ class ModeController():
 
     def batteryLow(self):
         # maybe: if level <= thresh + dist*scaling
-        # return self.battery_level <= RETURN_BATTERY_THRESHOLD
-        return False
+        return self.battery_level <= RETURN_BATTERY_THRESHOLD
 
     def hasReturnedHome(self):
         cur_pos = np.array([self.pos.x,self.pos.y])
