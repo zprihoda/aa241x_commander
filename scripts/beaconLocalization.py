@@ -18,8 +18,8 @@ CERTAINTY_THRESHOLD = 0.90    # publish localized beacon once we're 90% sure of 
 POS_DESIRED = 1               # position accuracy corresponding to certainty threshold
 
 
-def calcReliability(std):
-    pass_rate = sps.chi2.cdf(POS_DESIRED/std**2,2,loc=0,scale=1)
+def calcReliability(var):
+    pass_rate = sps.chi2.cdf(POS_DESIRED/var,2,loc=0,scale=1)
     return pass_rate
 
 def getUncertainty(h):
@@ -80,15 +80,15 @@ class BeaconLocalization():
 
     def updateBeaconLocation(self,id_num,y_k,sigma):
         """ Kalman Filter with 0 dynamics """
-        r_k = np.identity(2) * (sigma) ** 2
+        r_k = np.identity(2) * sigma
 
         prior_mean,prior_sigma = self.beacon_locations[id_num]
-        prior_cov = np.identity(2) * prior_sigma**2
+        prior_cov = np.identity(2) * prior_sigma
 
         K = np.matmul(prior_cov, np.linalg.inv(r_k + prior_cov))
         new_mean = prior_mean + np.matmul(K, y_k - prior_mean)
         new_cov = prior_cov - np.matmul(K, prior_cov)
-        new_sigma = np.sqrt(new_cov[0,0])
+        new_sigma = new_cov[0,0]
         return new_mean, new_sigma
 
     def publish(self):

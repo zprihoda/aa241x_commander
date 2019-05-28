@@ -18,13 +18,14 @@ def testKalmanFilter():
 	for i in range(N):
 
 		# simulate measurement
-		std = bl.getUncertainty(h)
+		var = bl.getUncertainty(h)
+		std = np.sqrt(var)
 		meas = beacon_location + np.random.normal(loc=0,scale=std,size=2)
 
 		if i == 0:
-			localizer.beacon_locations[0] = [meas,std]
+			localizer.beacon_locations[0] = [meas,var]
 		else:
-			localizer.beacon_locations[0] = localizer.updateBeaconLocation(0,meas,std)
+			localizer.beacon_locations[0] = localizer.updateBeaconLocation(0,meas,var)
 
 		# store values
 		mu_arr.append(localizer.beacon_locations[0][0])
@@ -37,6 +38,7 @@ def testKalmanFilter():
 	print 'At Height {:.1f} m'.format(h)
 	print '90% Condidence at {:d} measurements'.format(np.arange(1,N+1)[conf_arr>0.9][0])
 	print '95% Condidence at {:d} measurements'.format(np.arange(1,N+1)[conf_arr>0.95][0])
+	print '99% Condidence at {:d} measurements'.format(np.arange(1,N+1)[conf_arr>0.99][0])
 
 	fig,axes = plt.subplots(2,1,sharex=True)
 	axes[0].plot(range(N),sigma_arr)
@@ -53,7 +55,8 @@ def testUncertainty():
 	num_arr = []
 	an_arr = []
 	for h in h_arr:
-		std = bl.getUncertainty(h)
+		var = bl.getUncertainty(h)
+		std = np.sqrt(var)
 		loc = np.array([0,0])
 
 		# numerically determine pass rate
@@ -65,7 +68,7 @@ def testUncertainty():
 			err_arr.append(err)
 		err_arr = np.array(err_arr)
 		num_pass_rate = np.sum(err_arr<1.0)/float(N)
-		an_pass_rate = bl.calcReliability(std)
+		an_pass_rate = bl.calcReliability(var)
 		num_arr.append(num_pass_rate)
 		an_arr.append(an_pass_rate)
 
