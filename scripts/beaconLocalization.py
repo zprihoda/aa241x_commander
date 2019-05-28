@@ -14,7 +14,7 @@ from aa241x_commander.msg import LocalizedBeacons
 from geometry_msgs.msg import Pose, PoseStamped
 
 
-CERTAINTY_THRESHOLD = 0.90    # publish localized beacon once we're 90% sure of its location within 1 meter
+CERTAINTY_THRESHOLD = 0.95    # publish localized beacon once we're 95% sure of its location within 1 meter
 POS_DESIRED = 1               # position accuracy corresponding to certainty threshold
 
 
