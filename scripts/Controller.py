@@ -7,6 +7,7 @@ TODO: implement landing controller
 
 import rospy
 import numpy as np
+import math
 import numpy.linalg as npl
 from modeController import Mode
 
@@ -16,6 +17,7 @@ from geometry_msgs.msg import PoseStamped, Point, Vector3, TwistStamped
 from mavros_msgs.msg import PositionTarget, State
 from aa241x_mission.msg import MissionState
 from aa241x_commander.msg import Waypoint
+from aa241x_student.msg import Targetpoint
 
 
 V_MAX = 5.0     # in m/s
@@ -112,6 +114,7 @@ class Controller():
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/local_position/velocity_local', TwistStamped, self.velCallback)
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
+        rospy.Subscriber('/landing/target_point', Targetpoint, self.targetpointCallback)
 
 
     ## Callbacks
@@ -123,10 +126,16 @@ class Controller():
         self.pos = np.array([pos.x+self.e_offset, pos.y+self.n_offset])
         self.alt = pos.z + self.u_offset
 
+        quat = msg.pose.orientation
+        roll = math.atan2(2.0 * (quat.x * quat.y + quat.z * quat.w), 1.0 - 2.0 * (quat.y * quat.y + quat.z * quat.z))
+        pitch = math.asin(2.0 * (quat.x * quat.z - quat.w * quat.y))
+        yaw = math.atan2(2.0 * (quat.x * quat.w + quat.y * quat.z), 1.0 - 2.0 * (quat.z * quat.z + quat.w * quat.w))
+        self.attitude = np.array([roll, pitch, yaw])
+
     def velCallback(self,msg):
         vel = msg.twist.linear
         self.vel = np.array([vel.y,vel.x])
-        self.vel_alt = vel.z 
+        self.vel_alt = vel.z
 
     def waypointCallback(self,msg):
         if len(msg.alt) > 0:
@@ -141,6 +150,11 @@ class Controller():
         self.n_offset = msg.n_offset
         self.u_offset = msg.u_offset
 
+    def targetpointCallback(self, msg):
+        self.tag_point_x = msg.x
+        self.tag_point_y = msg.y
+        self.tag_point_z = msg.z
+        self.tag_point_yaw = msg.yaw
 
     ## Main Loop for Navigator
     def controlLoop(self):
@@ -183,16 +197,17 @@ class Controller():
 
         # Landing Controller
         elif self.mode == Mode.LANDING:
-            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
-            des_alt = self.waypoint.alt[-1]
+            current_yaw = self.attitude[2]
+            target_x_enu = self.tag_point_x * math.cos(current_yaw) - self.tag_point_y * math.sin(current_yaw)
+            target_y_enu = self.tag_point_x * math.sin(current_yaw) + self.tag_point_y * math.sin(current_yaw)
+            p = np.array([target_x_enu, target_y_enu])
 
             cmd_vel = pointController(p,self.pos,self.vel)
-            cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
 
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
-            self.cmd_vel.z = cmd_vel_alt
-            self.cmd_yaw = cmd_yaw
+            self.cmd_vel.z = -0.5
+            self.cmd_yaw = - self.tag_point_yaw
 
 
     ## Process Functions
