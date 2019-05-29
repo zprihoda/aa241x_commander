@@ -207,7 +207,7 @@ class Controller():
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = -0.5
-            self.cmd_yaw = - self.tag_point_yaw
+            self.cmd_yaw = self.tag_point_yaw
 
 
     ## Process Functions
