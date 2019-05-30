@@ -6,7 +6,7 @@ Beacon Localization Script for Autonomous Mission
 
 import numpy as np
 import numpy.linalg as npl
-import scipy.stats as sps
+# import scipy.stats as sps
 import rospy
 
 from aa241x_mission.msg import SensorMeasurement, PersonEstimate, MissionState
@@ -19,7 +19,11 @@ POS_DESIRED = 1               # position accuracy corresponding to certainty thr
 
 
 def calcReliability(var):
-    pass_rate = sps.chi2.cdf(POS_DESIRED/var,2,loc=0,scale=1)
+    # pass_rate = sps.chi2.cdf(POS_DESIRED/var,2,loc=0,scale=1)
+    pass_rate = var < 0.163     # 0.95 confidence
+    # pass_rate = var < 0.217     # 0.90 confidence
+    # pass_rate = var < 0.108     # 0.99 confidence
+
     return pass_rate
 
 def getUncertainty(h):
