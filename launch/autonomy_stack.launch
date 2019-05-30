@@ -1,4 +1,14 @@
 <launch>
+	<arg name="mission_index" default="1" doc="index of the desired mission to run" />
+
+	<!-- launch mavros -->
+	<include file="$(find aa241x_mission)/launch/mavros_pixhawk.launch" />
+
+	<!-- launch the mission node -->
+	<include file="$(find aa241x_mission)/launch/aa241x_mission.launch" >
+		<arg name="mission_index" value="$(arg mission_index)" />
+	</include>
+
 	<node pkg="aa241x_commander" type="modeController.py" name="modeController" output="screen" />
 	<node pkg="aa241x_commander" type="Navigator.py" name="Navigator" output="screen" />
 	<node pkg="aa241x_commander" type="Controller.py" name="Controller" output="screen" />
