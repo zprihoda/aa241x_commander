@@ -73,7 +73,7 @@ def pathController(p1,p2,p_cur,v_cur):
     g = 1.0     # v_cmd = g*v_par + v_perp
     v_cmd = g*v_par + v_perp
     v_cmd = v_cmd/npl.norm(v_cmd) * V_MAX
-    yaw_cmd = np.arctan2(v_cmd[1],v_cmd[0])
+    yaw_cmd = np.arctan2(direction_vector[1],direction_vector[0])
 
     return v_cmd, yaw_cmd
 
