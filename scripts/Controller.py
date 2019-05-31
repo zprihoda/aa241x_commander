@@ -156,7 +156,7 @@ class Controller():
         self.cmd_yaw_rate = 0
 
         # Go to Point
-        if self.mode == [Mode.TAKEOFF,Mode.LOCALIZATION]:
+        if self.mode in [Mode.TAKEOFF,Mode.LOCALIZATION]:
             if len(self.waypoint.e) != 1:    # wait until Navigator updates
                 return
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
