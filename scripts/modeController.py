@@ -157,7 +157,7 @@ class ModeController():
 
     def hasReturnedHome(self):
         cur_pos = np.array([self.pos.x,self.pos.y])
-        home_pos = self.landing_loc
+        home_pos = np.array([self.home_pos.position.x,self.home_pos.position.y])
         return npl.norm([home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
