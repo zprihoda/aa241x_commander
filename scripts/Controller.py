@@ -206,7 +206,7 @@ class Controller():
         self.cmd.header.stamp = rospy.get_rostime()
         self.cmd.velocity = self.cmd_vel
         self.cmd.yaw = self.cmd_yaw
-        self.cmd.yaw_rate = self,cmd_yaw_rate
+        self.cmd.yaw_rate = self.cmd_yaw_rate
         self.cmd_pub.publish(self.cmd)
 
     def run(self):

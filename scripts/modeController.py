@@ -21,6 +21,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 from sensor_msgs.msg import BatteryState
 from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement, MissionState
+from aa241x_mission.srv import RequestLandingPosition
 from aa241x_commander.msg import LocalizedBeacons
 
 # Global Variables
@@ -78,6 +79,9 @@ class ModeController():
         rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
+        # services
+        self.reqLandingLoc = rospy.ServiceProxy('lake_lag_landing_loc',RequestLandingPosition)
+
     ## Callbacks
     def stateCallback(self,msg):
         self.drone_mode = msg.mode
@@ -92,6 +96,7 @@ class ModeController():
             self.home_pos.position.x = x
             self.home_pos.position.y = y
             self.home_pos.position.z = z
+
         self.pos = msg.pose.position
         self.pos.x = x
         self.pos.y = y
@@ -133,6 +138,7 @@ class ModeController():
         check4 = self.home_pos is not None
         return check1 and check2 and check3 and check4
 
+
     def hasTakenOff(self):
         return self.pos.z > TAKEOFF_ALT_THRESHOLD
 
@@ -151,7 +157,7 @@ class ModeController():
 
     def hasReturnedHome(self):
         cur_pos = np.array([self.pos.x,self.pos.y])
-        home_pos = np.array([self.home_pos.position.x,self.home_pos.position.y])
+        home_pos = self.landing_loc
         return npl.norm([home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
@@ -210,7 +216,15 @@ class ModeController():
         if self.home_pos is not None:
             self.home_publisher.publish(self.home_pos)
 
+    def obtainLandingLocation(self):
+        landing_loc = self.reqLandingLoc()
+        self.landing_loc = np.array([landing_loc.east,landing_loc.north])
+
     def run(self):
+        # request services
+        self.obtainLandingLocation()
+
+        # main loop
         rate = rospy.Rate(10) # 10 Hz
         while not rospy.is_shutdown():
             self.determineMode()

@@ -20,6 +20,7 @@ from std_msgs.msg import Int8, Bool, Float32
 from geometry_msgs.msg import Pose, PoseStamped
 from aa241x_mission.msg import SensorMeasurement
 from aa241x_commander.msg import Waypoint, LocalizedBeacons
+from aa241x_mission.srv import RequestLandingPosition
 from aa241x_mission.msg import MissionState
 
 
@@ -60,6 +61,9 @@ class Navigator():
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
         rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
+
+        # services
+        self.reqLandingLoc = rospy.ServiceProxy('lake_lag_landing_loc',RequestLandingPosition)
 
 
     ## Callbacks
@@ -152,13 +156,13 @@ class Navigator():
                 self.waypoint_alt = [LOCALIZE_ALT]
 
         elif self.mode == Mode.HOME:
-            self.waypoint_e = [self.home_pos[0]]
-            self.waypoint_n = [self.home_pos[1]]
+            self.waypoint_e = [self.landing_loc[0]]
+            self.waypoint_n = [self.landing_loc[1]]
             self.waypoint_alt = [30]
 
         elif self.mode == Mode.LANDING:
-            self.waypoint_e = [self.home_pos[0]]
-            self.waypoint_n = [self.home_pos[1]]
+            self.waypoint_e = [self.landing_loc[0]]
+            self.waypoint_n = [self.landing_loc[1]]
             self.waypoint_alt = [0]
 
 
@@ -179,8 +183,14 @@ class Navigator():
         msg.data = self.search_done
         self.search_done_pub.publish(msg)
 
+    def obtainLandingLocation(self):
+        landing_loc = self.reqLandingLoc()
+        self.landing_loc = np.array([landing_loc.east,landing_loc.north])
 
     def run(self):
+        # request services
+        self.obtainLandingLocation()
+
         rate = rospy.Rate(10) # 10 Hz
         while not rospy.is_shutdown():
             self.navigate()
