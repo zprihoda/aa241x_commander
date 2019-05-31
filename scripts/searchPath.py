@@ -1,6 +1,4 @@
-# Contains the search path in lake lag frame ( in meters at the moment, may want to convert to lat lon )
-# TODO: Optimize search path
-
+# Contains the search path in lake lag frame
 
 search_path = [
 [0,140],
