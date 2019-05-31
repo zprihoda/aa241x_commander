@@ -168,6 +168,7 @@ class Controller():
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = cmd_vel_alt
+            self.cmd.type_mask = YAW_RATE_CONTROL_MASK
 
         # Follow path
         elif self.mode == Mode.SEARCH:
@@ -197,8 +198,7 @@ class Controller():
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = cmd_vel_alt
-            self.cmd_yaw = cmd_yaw
-
+            self.cmd.type_mask = VEL_CONTROL_MASK
 
     ## Process Functions
     def publish(self):
