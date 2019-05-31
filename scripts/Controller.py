@@ -156,7 +156,7 @@ class Controller():
         self.cmd_yaw_rate = 0
 
         # Go to Point
-        if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]:
+        if self.mode == [Mode.TAKEOFF,Mode.LOCALIZATION]:
             if len(self.waypoint.e) != 1:    # wait until Navigator updates
                 return
             p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
@@ -171,7 +171,7 @@ class Controller():
             self.cmd.type_mask = YAW_RATE_CONTROL_MASK
 
         # Follow path
-        elif self.mode == Mode.SEARCH:
+        elif self.mode in [Mode.SEARCH,Mode.HOME]:
             if len(self.waypoint.e) != 2:    # wait until Navigator updates
                 return
             p1 = np.array([self.waypoint.e[0], self.waypoint.n[0]])

@@ -156,8 +156,8 @@ class Navigator():
                 self.waypoint_alt = [LOCALIZE_ALT]
 
         elif self.mode == Mode.HOME:
-            self.waypoint_e = [self.home_pos[0]]
-            self.waypoint_n = [self.home_pos[1]]
+            self.waypoint_e = [wp_prev[0],self.home_pos[0]]
+            self.waypoint_n = [wp_prev[1],self.home_pos[1]]
             self.waypoint_alt = [30]
 
         elif self.mode == Mode.LANDING:
