@@ -40,6 +40,10 @@ def testKalmanFilter():
 	print '95% Condidence at {:d} measurements'.format(np.arange(1,N+1)[conf_arr>0.95][0])
 	print '99% Condidence at {:d} measurements'.format(np.arange(1,N+1)[conf_arr>0.99][0])
 
+	print '90% Condidence at sigma = {:.3f}'.format(sigma_arr[conf_arr>0.9][0])
+	print '95% Condidence at sigma = {:.3f}'.format(sigma_arr[conf_arr>0.95][0])
+	print '99% Condidence at sigma = {:.3f}'.format(sigma_arr[conf_arr>0.99][0])
+
 	fig,axes = plt.subplots(2,1,sharex=True)
 	axes[0].plot(range(N),sigma_arr)
 	axes[0].grid()
