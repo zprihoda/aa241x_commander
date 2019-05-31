@@ -22,6 +22,9 @@ V_MAX = 5.0     # in m/s
 VEL_CONTROL_MASK = (PositionTarget.IGNORE_PX | PositionTarget.IGNORE_PY | PositionTarget.IGNORE_PZ |
                     PositionTarget.IGNORE_AFX | PositionTarget.IGNORE_AFY | PositionTarget.IGNORE_AFZ |
                     PositionTarget.IGNORE_YAW_RATE);
+YAW_RATE_CONTROL_MASK = (PositionTarget.IGNORE_PX | PositionTarget.IGNORE_PY | PositionTarget.IGNORE_PZ |
+                    PositionTarget.IGNORE_AFX | PositionTarget.IGNORE_AFY | PositionTarget.IGNORE_AFZ |
+                    PositionTarget.IGNORE_YAW);
 
 
 def pointController(p_des,p_cur,v_cur):
@@ -95,7 +98,7 @@ class Controller():
         # setup cmd object
         self.cmd = PositionTarget()
         self.cmd.coordinate_frame = PositionTarget.FRAME_LOCAL_NED
-        self.cmd.type_mask = VEL_CONTROL_MASK   # command Vx,Vy,Vz,Yaw
+        self.cmd.type_mask = YAW_RATE_CONTROL_MASK   # command Vx,Vy,Vz,yaw_rate
         self.cmd.yaw = 0
 
         self.cmd_vel = Vector3() # NOTE: this is defined in ENU
@@ -126,7 +129,7 @@ class Controller():
     def velCallback(self,msg):
         vel = msg.twist.linear
         self.vel = np.array([vel.y,vel.x])
-        self.vel_alt = vel.z 
+        self.vel_alt = vel.z
 
     def waypointCallback(self,msg):
         if len(msg.alt) > 0:
@@ -150,6 +153,7 @@ class Controller():
         self.cmd_vel.y = 0
         self.cmd_vel.z = 0
         self.cmd_yaw = 0
+        self.cmd_yaw_rate = 0
 
         # Go to Point
         if self.mode in [Mode.TAKEOFF, Mode.LOCALIZATION, Mode.HOME]:
@@ -180,6 +184,7 @@ class Controller():
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = cmd_vel_alt
             self.cmd_yaw = cmd_yaw
+            self.cmd.type_mask = VEL_CONTROL_MASK
 
         # Landing Controller
         elif self.mode == Mode.LANDING:
@@ -201,6 +206,7 @@ class Controller():
         self.cmd.header.stamp = rospy.get_rostime()
         self.cmd.velocity = self.cmd_vel
         self.cmd.yaw = self.cmd_yaw
+        self.cmd.yaw_rate = self,cmd_yaw_rate
         self.cmd_pub.publish(self.cmd)
 
     def run(self):
