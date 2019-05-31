@@ -56,6 +56,7 @@ class ModeController():
         self.drone_mode = None      # MANUAL/ALTITUDE/POSITION/OFFBOARD etc.
         self.battery_level = 0.0      # assume we are empty until told otherwise
         self.battery_status = None
+        self.mission_start_time = None
 
         self.e_offset = 0
         self.n_offset = 0
@@ -126,7 +127,7 @@ class ModeController():
     # NOTE: some of these could be replaced by 1 line if statements in determineMode
     #   I opted to make functions for now so we can include more complicated logic if we desire
     def hasInitialized(self):
-        check1 = rospy.get_rostime() - self.mode_start_time > rospy.Duration.from_sec(IDLE_TIME)
+        check1 = rospy.get_rostime() - self.mission_start_time > rospy.Duration.from_sec(IDLE_TIME)
         check2 = self.e_offset != 0
         check3 = self.battery_status is not None
         check4 = self.home_pos is not None
@@ -170,6 +171,8 @@ class ModeController():
 
         elif self.mode == Mode.IDLE:
             if not self.mission_complete and self.drone_mode == "OFFBOARD":
+                if self.mission_start_time is None:
+                    self.mission_start_time = rospy.get_rostime()
                 if self.hasInitialized():
                     self.mode = Mode.TAKEOFF
 
