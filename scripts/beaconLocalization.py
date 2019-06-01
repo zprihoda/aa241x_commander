@@ -35,6 +35,7 @@ class BeaconLocalization():
 
     def __init__(self,debug=False):
         self.beacon_locations = {}      # stores beacon position and uncertainty {id : [(x,y),sigma]}
+        self.published = {}
         self.h = None
         self.e_offset = 0
         self.n_offset = 0
@@ -70,6 +71,7 @@ class BeaconLocalization():
                 self.beacon_locations[id_num] = self.updateBeaconLocation(id_num,np.array([n,e]),sigma)
             else:
                 self.beacon_locations[id_num] = [np.array([n,e]), sigma]
+                self.published[id_num] = 0
 
     def poseCallback(self,msg):
         if self.u_offset == 0:
@@ -114,12 +116,14 @@ class BeaconLocalization():
                 lbeac.sigma.append(sigma)
 
                 # Publish to person estimate once we are 90% positive
-                msg = PersonEstimate()
-                msg.header.stamp = rospy.Time.now()
-                msg.id = beacon_id
-                msg.n = pos[0]
-                msg.e = pos[1]
-                self.person_pub.publish(msg)
+                if not self.published[beacon_id]:
+                    msg = PersonEstimate()
+                    msg.header.stamp = rospy.Time.now()
+                    msg.id = beacon_id
+                    msg.n = pos[0]
+                    msg.e = pos[1]
+                    self.person_pub.publish(msg)
+                    self.published[beacon_id] = 1
 
         lbeac.num_beacons = len(lbeac.ids)
         self.lbeac_pub.publish(lbeac)
