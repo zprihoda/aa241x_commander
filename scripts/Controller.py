@@ -128,8 +128,11 @@ class Controller():
     def poseCallback(self,msg):
         pos = msg.pose.position
         self.pos = np.array([pos.x+self.e_offset, pos.y+self.n_offset])
+        self.pos = np.array([pos.x, pos.y])
         self.alt = pos.z + self.u_offset
+        self.alt = pos.z
 
+    def globalPoseCallback(self.msg):
         quat = msg.pose.orientation
         roll = math.atan2(2.0 * (quat.x * quat.y + quat.z * quat.w), 1.0 - 2.0 * (quat.y * quat.y + quat.z * quat.z))
         pitch = math.asin(2.0 * (quat.x * quat.z - quat.w * quat.y))
@@ -208,23 +211,24 @@ class Controller():
                 target_y_enu = self.tag_point_x * math.sin(current_yaw) + self.tag_point_y * math.sin(current_yaw)
                 p = np.array([target_x_enu, target_y_enu])
                 des_alt = 3;
-            
+                
+                
                 cmd_vel = pointController(p,self.pos,self.vel)
                 cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
-
+                print("yaw",current_yaw, "p", p, "pos", self.pos, "vel", self.vel, "cmd_vel", cmd_vel)
                 self.cmd_vel.x = cmd_vel[0]
                 self.cmd_vel.y = cmd_vel[1]
                 self.cmd_vel.z = cmd_vel_alt
                 self.cmd_yaw = self.tag_point_yaw
-            else:
-                p = np.array([self.waypoint.e[0], self.waypoint.n[0]])
-                des_alt = self.waypoint.alt[-1]
-                cmd_vel = pointController(p, self.pose,self.vel)
-                cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
-                self.cmd_vel.x = cmd_vel[0]
-                self.cmd_vel.y = cmd_vel[1]
-                self.cmd_vel.z = cmd_vel_alt
-                self.cmd_yaw = current_yaw
+            #else:
+            #    p = np.array([self.waypoint.e[0], self.waypoint.n[0]])
+            #    des_alt = self.waypoint.alt[-1]
+            #    cmd_vel = pointController(p, self.pose,self.vel)
+            #    cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
+            #    self.cmd_vel.x = cmd_vel[0]
+            #    self.cmd_vel.y = cmd_vel[1]
+            #    self.cmd_vel.z = cmd_vel_alt
+            #    self.cmd_yaw = current_yaw
 
 
     ## Process Functions
