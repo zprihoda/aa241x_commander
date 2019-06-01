@@ -1,0 +1,8 @@
+<launch>
+	<!-- launch file to log person found -->
+
+	<node pkg="rosbag" type="record" name="position_bag"
+		args="-o $(env HOME)/rosbags/person_bag	/person_found" 
+    />
+
+</launch>

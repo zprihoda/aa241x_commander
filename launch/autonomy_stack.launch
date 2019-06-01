@@ -13,4 +13,11 @@
 	<node pkg="aa241x_commander" type="Navigator.py" name="Navigator" output="screen" />
 	<node pkg="aa241x_commander" type="Controller.py" name="Controller" output="screen" />
 	<node pkg="aa241x_commander" type="beaconLocalization.py" name="beaconLocalization" output="screen" />
+
+	<!-- logging -->
+	<include file="$(find aa241x_commander)/launch/log_position.launch" />
+	<include file="$(find aa241x_commander)/launch/log_person.launch" />
+
+
+
 </launch>
