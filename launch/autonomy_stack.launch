@@ -9,6 +9,10 @@
 		<arg name="mission_index" value="$(arg mission_index)" />
 	</include>
 
+    <!-- launch the mission node -->
+	<include file="$(find aa241x_vision)/launch/vision.launch" >
+	</include>
+
 	<node pkg="aa241x_commander" type="modeController.py" name="modeController" output="screen" />
 	<node pkg="aa241x_commander" type="Navigator.py" name="Navigator" output="screen" />
 	<node pkg="aa241x_commander" type="Controller.py" name="Controller" output="screen" />

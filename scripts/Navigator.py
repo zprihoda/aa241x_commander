@@ -23,8 +23,8 @@ from aa241x_commander.msg import Waypoint, LocalizedBeacons
 from aa241x_mission.msg import MissionState
 
 
-SEARCH_ALT = 50 # desired altitude for performing search mode
-LOCALIZE_ALT = 35   # desired altitude for performing localization
+SEARCH_ALT = 10 # desired altitude for performing search mode
+LOCALIZE_ALT = 10   # desired altitude for performing localization
 PATH_THRESH = 5     # move to next path once within 5 meters of end point (smooths out path)
 
 class Navigator():
@@ -154,12 +154,12 @@ class Navigator():
         elif self.mode == Mode.HOME:
             self.waypoint_e = [self.home_pos[0]]
             self.waypoint_n = [self.home_pos[1]]
-            self.waypoint_alt = [30]
+            self.waypoint_alt = [3]
 
         elif self.mode == Mode.LANDING:
             self.waypoint_e = [self.home_pos[0]]
             self.waypoint_n = [self.home_pos[1]]
-            self.waypoint_alt = [0]
+            self.waypoint_alt = [3]
 
 
     ## Process Functions
