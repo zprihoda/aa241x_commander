@@ -45,7 +45,7 @@ class ModeController():
     def __init__(self):
         rospy.init_node('mode_controller', anonymous=True)
 
-        self.mode = Mode.LANDING
+        self.mode = Mode.IDLE
         self.prev_mode = None
         self.loc_done = False
         self.search_done = False

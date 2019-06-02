@@ -154,7 +154,7 @@ class Navigator():
         elif self.mode == Mode.HOME:
             self.waypoint_e = [self.home_pos[0]]
             self.waypoint_n = [self.home_pos[1]]
-            self.waypoint_alt = [3]
+            self.waypoint_alt = [5]
 
         #elif self.mode == Mode.LANDING:
         #    self.waypoint_e = [self.home_pos[0]]
