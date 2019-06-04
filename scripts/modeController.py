@@ -70,6 +70,7 @@ class ModeController():
         # subscribers
         rospy.Subscriber('/mavros/state', State, self.stateCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
+        #rospy.Subscriber('/lake_lag_pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/battery',BatteryState,self.batteryCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
         rospy.Subscriber('/navigator/loc_done', Bool, self.locDoneCallback)
@@ -86,8 +87,11 @@ class ModeController():
         x = pos.x + self.e_offset
         y = pos.y + self.n_offset
         z = pos.z + self.u_offset
+        #x = pos.x
+        #y = pos.y
+        #z = pos.z
+        
         if self.home_pos is None and self.e_offset != 0:
-        #if self.home_pos is None:        
             self.home_pos = Pose()
             self.home_pos.position.x = x
             self.home_pos.position.y = y

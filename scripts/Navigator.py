@@ -56,6 +56,7 @@ class Navigator():
         # subscribers
         rospy.Subscriber('/modeController/mode',Int8, self.modeCallback)
         rospy.Subscriber('/modeController/home',Pose, self.homeCallback)
+        #rospy.Subscriber('/lake_lag_pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber("/measurement", SensorMeasurement, self.beaconCallback);
         rospy.Subscriber('/localizer/localized_beacons',LocalizedBeacons,self.localizedBeaconCallback)
@@ -71,6 +72,9 @@ class Navigator():
         x = pos.x + self.e_offset
         y = pos.y + self.n_offset
         z = pos.z + self.u_offset
+        #x = pos.x
+        #y = pos.y
+        #z = pos.z
 
         self.pose_header = msg.header
         self.pos = msg.pose.position

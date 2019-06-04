@@ -117,6 +117,7 @@ class Controller():
         # subscribers
         rospy.Subscriber('/navigator/waypoint', Waypoint, self.waypointCallback)
         rospy.Subscriber('/modeController/mode', Int8, self.modeCallback)
+        #rospy.Subscriber('/lake_lag_pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/global_position/compass_hdg', Float64, self.globalPoseCallback)
         rospy.Subscriber('/mavros/local_position/velocity_local', TwistStamped, self.velCallback)
@@ -130,7 +131,9 @@ class Controller():
     def poseCallback(self, msg):
         pos = msg.pose.position
         self.pos = np.array([pos.x + self.e_offset, pos.y + self.n_offset])
+        #self.pos = np.array([pos.x, pos.y])
         self.alt = pos.z + self.u_offset
+        #self.alt = pos.z
 
 
     def globalPoseCallback(self, msg):
