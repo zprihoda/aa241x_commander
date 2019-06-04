@@ -130,9 +130,8 @@ class Controller():
     def poseCallback(self, msg):
         pos = msg.pose.position
         self.pos = np.array([pos.x + self.e_offset, pos.y + self.n_offset])
-        self.pos = np.array([pos.x, pos.y])
         self.alt = pos.z + self.u_offset
-        self.alt = pos.z
+
 
     def globalPoseCallback(self, msg):
         yaw_degree = msg.data
@@ -157,7 +156,9 @@ class Controller():
         self.e_offset = msg.e_offset
         self.n_offset = msg.n_offset
         self.u_offset = msg.u_offset
-
+        #self.e_offset = 0
+        #self.n_offset = 0
+        #self.u_offset = 0
 
     def targetpointCallback(self, msg):
         self.tag_point_id = msg.id
@@ -181,6 +182,8 @@ class Controller():
                 return
             p = np.array([self.waypoint.e[0], self.waypoint.n[0]])
             des_alt = self.waypoint.alt[-1]
+            if self.mode == Mode.HOME:
+                des_alt = self.alt
 
             cmd_vel = pointController(p, self.pos, self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
@@ -213,16 +216,20 @@ class Controller():
                 target_x_enu = self.tag_point_x * math.cos(current_yaw) + self.tag_point_y * math.sin(current_yaw)
                 target_y_enu = - self.tag_point_x * math.sin(current_yaw) + self.tag_point_y * math.cos(current_yaw)
                 p = np.array([target_x_enu, target_y_enu])
-                self.cmd_yaw = -self.tag_point_yaw + self.current_yaw
+                if self.tag_point_id == -1:
+                    self.cmd_yaw = self.current_yaw
+                else:
+                    self.cmd_yaw = - self.tag_point_yaw + self.current_yaw
+                #self.cmd_yaw = 0
             else:
                 p = np.array([0, 0])
 
             des_alt = 5
             cmd_vel = pointController(p, current_pose_local, self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
-
-            self.cmd_vel.x = cmd_vel[0]
-            self.cmd_vel.y = cmd_vel[1]
+            cmd_vel_alt = -0.25
+            self.cmd_vel.x = cmd_vel[0] *0.33
+            self.cmd_vel.y = cmd_vel[1] *0.33
             self.cmd_vel.z = cmd_vel_alt
 
 
@@ -245,4 +252,4 @@ class Controller():
 
 if __name__ == '__main__':
     controller = Controller()
-controller.run()
+    controller.run()

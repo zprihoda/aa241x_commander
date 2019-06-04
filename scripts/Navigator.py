@@ -100,6 +100,9 @@ class Navigator():
         self.e_offset = msg.e_offset
         self.n_offset = msg.n_offset
         self.u_offset = msg.u_offset
+        #self.e_offset = 0
+        #self.n_offset = 0
+        #self.u_offset = 0
 
 
 
@@ -114,7 +117,7 @@ class Navigator():
         elif self.mode == Mode.TAKEOFF:
             self.waypoint_e = [self.home_pos[0]]
             self.waypoint_n = [self.home_pos[1]]
-            self.waypoint_alt = [40]  # set altitude waypoint above 30
+            self.waypoint_alt = [10]  # set altitude waypoint above 30
 
         elif self.mode == Mode.SEARCH:
             if self.search_wp_idx >= len(search_path):

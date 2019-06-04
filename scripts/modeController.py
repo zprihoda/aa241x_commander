@@ -24,9 +24,9 @@ from aa241x_mission.msg import SensorMeasurement, MissionState
 from aa241x_commander.msg import LocalizedBeacons
 
 # Global Variables
-TAKEOFF_ALT_THRESHOLD = 5          # Altitude at which we have finished take-off
+TAKEOFF_ALT_THRESHOLD = 10          # Altitude at which we have finished take-off
 RETURN_BATTERY_THRESHOLD = 0.20     # battery threshold for returning home
-HOME_POS_THRESH = 5.0               # Position error Threshold for determining once we're home
+HOME_POS_THRESH = 2.0               # Position error Threshold for determining once we're home
 IDLE_TIME = 5.0                     # sit in idle for this long before taking off
 MAX_BATTERY_CHARGE = 4400.          # Maximum battery charge in Mah
 TARGET_NUM_NODES = 5
@@ -87,10 +87,12 @@ class ModeController():
         y = pos.y + self.n_offset
         z = pos.z + self.u_offset
         if self.home_pos is None and self.e_offset != 0:
+        #if self.home_pos is None:        
             self.home_pos = Pose()
             self.home_pos.position.x = x
             self.home_pos.position.y = y
             self.home_pos.position.z = z
+        
         self.pos = msg.pose.position
         self.pos.x = x
         self.pos.y = y
@@ -121,6 +123,9 @@ class ModeController():
         self.e_offset = msg.e_offset
         self.n_offset = msg.n_offset
         self.u_offset = msg.u_offset
+        #self.e_offset = 0
+        #self.n_offset = 0
+        #self.u_offset = 0
 
     ## Decision Functions
     # NOTE: some of these could be replaced by 1 line if statements in determineMode
@@ -193,6 +198,8 @@ class ModeController():
                 self.mode = Mode.LANDING
 
         elif self.mode == Mode.LANDING:
+            #if not self.hasReturnedHome():
+             #   self.mode = Mode.HOME
             if self.hasLanded():
                 self.mission_complete = True
                 self.mode = Mode.IDLE
