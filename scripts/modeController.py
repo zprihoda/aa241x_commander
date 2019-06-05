@@ -219,8 +219,9 @@ class ModeController():
 
     def obtainLandingLocation(self):
         landing_loc = self.reqLandingLoc()
-        lading_loc_lag = self.convCoord(landing_loc.north, landing_loc.east, 0)
-        self.landing_loc = np.array([landing_loc_lag.east, landing_loc_lag.north])
+        self.landing_loc = np.array([landing_loc.east, landing_loc.north])
+        rospy.loginfo("Landing Location (LL Frame): %.3f  %.3f", landing_loc.east, landing_loc.north)
+
 
     def run(self):
         # request services

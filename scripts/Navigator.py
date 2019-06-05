@@ -64,7 +64,6 @@ class Navigator():
 
         # services
         self.reqLandingLoc = rospy.ServiceProxy('lake_lag_landing_loc', RequestLandingPosition)
-        self.convertCoords = rospy.ServiceProxy('gps_to_lake_lag', CoordinateConversion)
 
 
     ## Callbacks
@@ -187,8 +186,7 @@ class Navigator():
 
     def obtainLandingLocation(self):
         landing_loc = self.reqLandingLoc()
-        lading_loc_lag = self.convCoord(landing_loc.north, landing_loc.east, 0)
-        self.landing_loc = np.array([landing_loc_lag.east, landing_loc_lag.north])
+        self.landing_loc = np.array([landing_loc.east, landing_loc.north])
 
     def run(self):
         # request services
