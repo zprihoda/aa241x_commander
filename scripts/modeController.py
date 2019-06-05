@@ -26,7 +26,7 @@ from aa241x_commander.msg import LocalizedBeacons
 # Global Variables
 TAKEOFF_ALT_THRESHOLD = 10          # Altitude at which we have finished take-off
 RETURN_BATTERY_THRESHOLD = 0.20     # battery threshold for returning home
-HOME_POS_THRESH = 2.0               # Position error Threshold for determining once we're home
+HOME_POS_THRESH = 3.0               # Position error Threshold for determining once we're home
 IDLE_TIME = 5.0                     # sit in idle for this long before taking off
 MAX_BATTERY_CHARGE = 4400.          # Maximum battery charge in Mah
 TARGET_NUM_NODES = 5
@@ -202,8 +202,8 @@ class ModeController():
                 self.mode = Mode.LANDING
 
         elif self.mode == Mode.LANDING:
-            #if not self.hasReturnedHome():
-             #   self.mode = Mode.HOME
+            if not self.hasReturnedHome():
+                self.mode = Mode.HOME
             if self.hasLanded():
                 self.mission_complete = True
                 self.mode = Mode.IDLE

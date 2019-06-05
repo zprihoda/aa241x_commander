@@ -99,6 +99,7 @@ class Controller():
         self.tag_point_y = 0
         self.tag_point_z = 0
         self.tag_point_yaw = 0
+        self.last_tag = np.array([1000, 1000])
 
         # setup cmd object
         self.cmd = PositionTarget()
@@ -187,10 +188,10 @@ class Controller():
             des_alt = self.waypoint.alt[-1]
             if self.mode == Mode.HOME:
                 des_alt = self.alt
-
             cmd_vel = pointController(p, self.pos, self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
-
+            if self.mode == Mode.HOME:
+                cmd_vel_alt = -0.25
             self.cmd_vel.x = cmd_vel[0]
             self.cmd_vel.y = cmd_vel[1]
             self.cmd_vel.z = cmd_vel_alt
@@ -214,26 +215,32 @@ class Controller():
         # Landing Controller
         elif self.mode == Mode.LANDING:
             current_pose_local = np.array([0, 0])
+            
             if self.current_yaw != None:
                 current_yaw = self.current_yaw
                 target_x_enu = self.tag_point_x * math.cos(current_yaw) + self.tag_point_y * math.sin(current_yaw)
                 target_y_enu = - self.tag_point_x * math.sin(current_yaw) + self.tag_point_y * math.cos(current_yaw)
                 p = np.array([target_x_enu, target_y_enu])
                 if self.tag_point_id == -1:
-                    self.cmd_yaw = self.current_yaw
+                    if self.last_tag[0] != 1000:
+                        cmd_vel = pointController(self.last_tag, self.pos, self.vel)
+                    else:
+                        cmd_vel = pointController(p, current_pose_local, self.vel)
                 else:
-                    self.cmd_yaw = - self.tag_point_yaw + self.current_yaw
-                #self.cmd_yaw = 0
+                    cmd_vel = pointController(p, current_pose_local, self.vel)
+                    self.last_tag = np.array([p[0] + self.pos[0], p[1] + self.pos[1]])
+
             else:
                 p = np.array([0, 0])
+                cmd_vel = pointController(p, current_pose_local, self.vel)
 
             des_alt = 5
-            cmd_vel = pointController(p, current_pose_local, self.vel)
             cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
             cmd_vel_alt = -0.25
-            self.cmd_vel.x = cmd_vel[0] *0.33
-            self.cmd_vel.y = cmd_vel[1] *0.33
+            self.cmd_vel.x = cmd_vel[0] *0.25
+            self.cmd_vel.y = cmd_vel[1] *0.25
             self.cmd_vel.z = cmd_vel_alt
+            self.cmd_yaw = 0
 
 
     ## Process Functions
