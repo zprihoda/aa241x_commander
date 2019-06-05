@@ -154,6 +154,9 @@ class Controller():
         self.u_offset = msg.u_offset
 
     def targetpointCallback(self, msg):
+        if self.mode != Mode.LANDING:
+            return
+
         tag_point_id = msg.id
         tag_point_x = msg.x
         tag_point_y = msg.y
