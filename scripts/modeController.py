@@ -21,7 +21,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 from sensor_msgs.msg import BatteryState
 from mavros_msgs.msg import State
 from aa241x_mission.msg import SensorMeasurement, MissionState
-from aa241x_mission.srv import RequestLandingPosition
+from aa241x_mission.srv import RequestLandingPosition, CoordinateConversion
 from aa241x_commander.msg import LocalizedBeacons
 
 # Global Variables
@@ -80,7 +80,8 @@ class ModeController():
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
         # services
-        self.reqLandingLoc = rospy.ServiceProxy('lake_lag_landing_loc',RequestLandingPosition)
+        self.reqLandingLoc = rospy.ServiceProxy('lake_lag_landing_loc', RequestLandingPosition)
+        self.convertCoords = rospy.ServiceProxy('gps_to_lake_lag', CoordinateConversion)
 
     ## Callbacks
     def stateCallback(self,msg):
@@ -157,7 +158,7 @@ class ModeController():
 
     def hasReturnedHome(self):
         cur_pos = np.array([self.pos.x,self.pos.y])
-        home_pos = np.array([self.home_pos.position.x,self.home_pos.position.y])
+        home_pos = self.landing_loc
         return npl.norm([home_pos-cur_pos]) <= HOME_POS_THRESH
 
     def hasLanded(self):
@@ -218,7 +219,8 @@ class ModeController():
 
     def obtainLandingLocation(self):
         landing_loc = self.reqLandingLoc()
-        self.landing_loc = np.array([landing_loc.east,landing_loc.north])
+        lading_loc_lag = self.convCoord(landing_loc.north, landing_loc.east, 0)
+        self.landing_loc = np.array([landing_loc_lag.east, landing_loc_lag.north])
 
     def run(self):
         # request services
