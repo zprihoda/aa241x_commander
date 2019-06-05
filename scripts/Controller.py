@@ -11,11 +11,11 @@ import numpy.linalg as npl
 from modeController import Mode
 
 # Import message types
-from std_msgs.msg import Int8
+from std_msgs.msg import Int8, Float64
 from geometry_msgs.msg import PoseStamped, Point, Vector3, TwistStamped
 from mavros_msgs.msg import PositionTarget, State
 from aa241x_mission.msg import MissionState
-from aa241x_commander.msg import Waypoint
+from aa241x_commander.msg import Waypoint, Targetpoint
 
 
 V_MAX = 5.0     # in m/s
