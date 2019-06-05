@@ -55,6 +55,7 @@ add_message_files(
   FILES
   LocalizedBeacons.msg
   Waypoint.msg
+  Targetpoint.msg
 )
 
 ## Generate services in the 'srv' folder
