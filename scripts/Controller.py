@@ -86,10 +86,13 @@ class Controller():
         self.mode = None
         self.pos = None     # current drone position
         self.vel = None
+        self.current_yaw = None
         self.vel_alt = None
         self.prev_alt = 0   # if no altitude given, maintain previous
         self.waypoint = None
         self.drone_mode = None
+        self.tag_detected = None
+        self.landing_target = None
 
         self.e_offset = 0
         self.n_offset = 0
@@ -114,6 +117,8 @@ class Controller():
         rospy.Subscriber('/modeController/mode',Int8, self.modeCallback)
         rospy.Subscriber('/mavros/local_position/pose', PoseStamped, self.poseCallback)
         rospy.Subscriber('/mavros/local_position/velocity_local', TwistStamped, self.velCallback)
+        rospy.Subscriber('/mavros/global_position/compass_hdg', Float64, self.headingCallback)
+        rospy.Subscriber('/landing/target_point', Targetpoint, self.targetpointCallback)
         rospy.Subscriber('/mission_state',MissionState,self.missionStateCallback)
 
 
@@ -131,6 +136,10 @@ class Controller():
         self.vel = np.array([vel.y,vel.x])
         self.vel_alt = vel.z
 
+    def headingCallback(self, msg):
+        yaw_degree = msg.data
+        self.current_yaw = yaw_degree * np.pi/180
+
     def waypointCallback(self,msg):
         if len(msg.alt) > 0:
             self.waypoint = msg
@@ -143,6 +152,21 @@ class Controller():
         self.e_offset = msg.e_offset
         self.n_offset = msg.n_offset
         self.u_offset = msg.u_offset
+
+    def targetpointCallback(self, msg):
+        tag_point_id = msg.id
+        tag_point_x = msg.x
+        tag_point_y = msg.y
+        tag_point_z = msg.z
+        tag_point_yaw = msg.yaw
+
+        if self.tag_point_id != -1:
+            self.tag_detected = True
+
+            current_yaw = self.current_yaw
+            target_x_enu = tag_point_x * np.cos(current_yaw) + tag_point_y * np.sin(current_yaw)
+            target_y_enu = - tag_point_x * np.sin(current_yaw) + tag_point_y * np.cos(current_yaw)
+            self.landing_target = np.array([target_x_enu, target_y_enu])
 
 
     ## Main Loop for Navigator
@@ -189,15 +213,19 @@ class Controller():
 
         # Landing Controller
         elif self.mode == Mode.LANDING:
-            p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
-            des_alt = self.waypoint.alt[-1]
+            
+            if not self.tag_detected:   # no detections yet, maintain landing location and slowly descend
+                p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
+                cmd_vel = pointController(p, self.pos, self.vel)
 
-            cmd_vel = pointController(p,self.pos,self.vel)
-            cmd_vel_alt = pointController(des_alt, self.alt, self.vel_alt)
+            else:       # tag detected, initiate landing procedure
+                cmd_vel = pointController(self.landing_target, self.pos, self.vel)
 
-            self.cmd_vel.x = cmd_vel[0]
-            self.cmd_vel.y = cmd_vel[1]
+            cmd_vel_alt = -0.25
+            self.cmd_vel.x = cmd_vel[0] * 0.25
+            self.cmd_vel.y = cmd_vel[1] * 0.25
             self.cmd_vel.z = cmd_vel_alt
+            self.cmd_yaw = 0
             self.cmd.type_mask = VEL_CONTROL_MASK
 
     ## Process Functions
