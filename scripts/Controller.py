@@ -86,6 +86,7 @@ class Controller():
         self.mode = None
         self.pos = None     # current drone position
         self.vel = None
+        self.alt = None
         self.current_yaw = None
         self.vel_alt = None
         self.prev_alt = 0   # if no altitude given, maintain previous
@@ -175,7 +176,7 @@ class Controller():
                 self.landing_target_arr = target
             else:
                 for i in range(msg.N):
-                    self.landing_target_arr = np.vstack(self.landing_target_arr,target)
+                    self.landing_target_arr = np.vstack([self.landing_target_arr,target])
                 self.landing_target_arr = self.landing_target_arr[-20:] # only keep the 20 most recent measurements
 
             self.landing_target = np.mean(self.landing_target_arr, axis=0)
