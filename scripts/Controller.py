@@ -241,10 +241,7 @@ class Controller():
             elif local_alt > 5:
                 cmd_vel_alt = -0.5
             else:
-                if not self.tag_detected:   # if no tag detected, don't keep descending
-                    cmd_vel_alt = pointController(5, local_alt, self.vel_alt)
-                else:
-                    cmd_vel_alt = -0.25
+                cmd_vel_alt = -0.25
 
             self.cmd_vel.x = cmd_vel[0] * 0.25
             self.cmd_vel.y = cmd_vel[1] * 0.25
