@@ -174,13 +174,12 @@ class Controller():
 
             if self.landing_target_arr is None:
                 self.landing_target_arr = target
+                self.landing_target = target
             else:
                 for i in range(msg.N):
                     self.landing_target_arr = np.vstack([self.landing_target_arr,target])
                 self.landing_target_arr = self.landing_target_arr[-20:] # only keep the 20 most recent measurements
-
-            self.landing_target = np.mean(self.landing_target_arr, axis=0)
-
+                self.landing_target = np.mean(self.landing_target_arr, axis=0)
 
     ## Main Loop for Navigator
     def controlLoop(self):
