@@ -170,7 +170,7 @@ class Controller():
             current_yaw = self.current_yaw
             target_x_enu = tag_point_x * np.cos(current_yaw) + tag_point_y * np.sin(current_yaw)
             target_y_enu = - tag_point_x * np.sin(current_yaw) + tag_point_y * np.cos(current_yaw)
-            target = np.array([target_x_enu,target_y_enu])
+            target = np.array([self.pos[0]+target_x_enu,self.pos[1]+target_y_enu])
 
             if self.landing_target_arr is None:
                 self.landing_target_arr = target
