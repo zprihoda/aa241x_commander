@@ -92,6 +92,7 @@ class Controller():
         self.waypoint = None
         self.drone_mode = None
         self.tag_detected = None
+        self.landing_target_arr = None
         self.landing_target = None
 
         self.e_offset = 0
@@ -169,7 +170,10 @@ class Controller():
             current_yaw = self.current_yaw
             target_x_enu = tag_point_x * np.cos(current_yaw) + tag_point_y * np.sin(current_yaw)
             target_y_enu = - tag_point_x * np.sin(current_yaw) + tag_point_y * np.cos(current_yaw)
-            self.landing_target = np.array([target_x_enu, target_y_enu])
+            target = np.array([target_x_enu,target_y_enu])
+
+            self.landing_target_arr = np.vstack(self.landing_target_arr,target)
+            self.landing_target = np.median(self.landing_target_arr, axis=0)
 
 
     ## Main Loop for Navigator
@@ -216,7 +220,7 @@ class Controller():
 
         # Landing Controller
         elif self.mode == Mode.LANDING:
-            
+
             if not self.tag_detected:   # no detections yet, maintain landing location and slowly descend
                 p = np.array([self.waypoint.e[0],self.waypoint.n[0]])
                 cmd_vel = pointController(p, self.pos, self.vel)
