@@ -158,13 +158,12 @@ class Controller():
         if self.mode != Mode.LANDING:
             return
 
-        tag_point_id = msg.id
         tag_point_x = msg.x
         tag_point_y = msg.y
         tag_point_z = msg.z
         tag_point_yaw = msg.yaw
 
-        if self.tag_point_id != -1:
+        if msg.N != 0:
             self.tag_detected = True
 
             current_yaw = self.current_yaw
@@ -172,8 +171,14 @@ class Controller():
             target_y_enu = - tag_point_x * np.sin(current_yaw) + tag_point_y * np.cos(current_yaw)
             target = np.array([target_x_enu,target_y_enu])
 
-            self.landing_target_arr = np.vstack(self.landing_target_arr,target)
-            self.landing_target = np.median(self.landing_target_arr, axis=0)
+            if self.landing_target_arr is None:
+                self.landing_target_arr = target
+            else:
+                for i in range(msg.N):
+                    self.landing_target_arr = np.vstack(self.landing_target_arr,target)
+                self.landing_target_arr = self.landing_target_arr[-20:] # only keep the 20 most recent measurements
+
+            self.landing_target = np.mean(self.landing_target_arr, axis=0)
 
 
     ## Main Loop for Navigator
@@ -228,13 +233,17 @@ class Controller():
             else:       # tag detected, initiate landing procedure
                 cmd_vel = pointController(self.landing_target, self.pos, self.vel)
 
+            # determine altitude control
             local_alt = self.alt - self.u_offset
             if local_alt > 10:
                 cmd_vel_alt = -1.00
             elif local_alt > 5:
                 cmd_vel_alt = -0.5
             else:
-                cmd_vel_alt = -0.25
+                if not self.tag_detected:   # if no tag detected, don't keep descending
+                    cmd_vel_alt = pointController(5, local_alt, self.vel_alt)
+                else:
+                    cmd_vel_alt = -0.25
 
             self.cmd_vel.x = cmd_vel[0] * 0.25
             self.cmd_vel.y = cmd_vel[1] * 0.25
