@@ -232,15 +232,18 @@ class Controller():
 
             else:       # tag detected, initiate landing procedure
                 cmd_vel = pointController(self.landing_target, self.pos, self.vel)
+                
 
             # determine altitude control
             local_alt = self.alt - self.u_offset
-            if local_alt > 10:
-                cmd_vel_alt = -1.00
-            elif local_alt > 5:
+            if local_alt > 15:
+                cmd_vel_alt = -1.0
+            elif local_alt > 10:
                 cmd_vel_alt = -0.5
-            else:
+            elif local_alt > 5:
                 cmd_vel_alt = -0.25
+            else:
+                cmd_vel_alt = -0.125
 
             self.cmd_vel.x = cmd_vel[0] * 0.25
             self.cmd_vel.y = cmd_vel[1] * 0.25
